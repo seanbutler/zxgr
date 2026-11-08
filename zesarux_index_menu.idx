@@ -1,0 +1,220 @@
+Main Menu
+Smart load
+Snapshot
+Machine
+Audio
+Display
+Storage
+Debug
+Network
+Windows
+Settings
+Search menu
+Procrastinate
+Help
+ESC Close menu
+F10 Exit ZEsarUX
+
+Main Menu-> Machine
+--- Select manufacturer ---
+Amstrad
+Ascii Corp
+Cambridge Computers
+Chloe Corporation
+Coleco Industries
+Czerweny Electronica
+Investronica
+Jupiter Cantab
+Mario Prato
+Microdigital Eletronica
+Miles Gordon Technology
+NedoPC
+New Horizons
+Next Team
+Pentagon
+Science of Cambridge
+Sega
+Sinclair Research
+Spectravideo Intl
+Timex Computer
+Timex Sinclair
+TS Labs
+ZXUno Team
+ESC Close
+
+Main Menu-> Machine menu-> Sinclair Research
+ZX Spectrum 16k
+ZX Spectrum 48k
+ZX Spectrum+ 48k
+ZX Spectrum+ 128k
+ZX80
+ZX81
+QL
+ESC Close
+
+Main Menu-> Display
+Save Screen
+Quicksave Screen
+View Screen
+Video Output
+View Colour Palettes
+On Screen Keyboard
+Text Adventure Tools
+ESC Close
+
+Main Menu-> Snapshot
+Load snapshot
+Save snapshot
+Quickload
+Quicksave
+Snapshots to RAM
+ESC Close
+
+Main Menu-> Storage-> Tape
+--- Standard Tape ---
+    Input [gr.P]
+[X] Input tape inserted
+    Output []
+[ ] Output tape inserted
+--- Input Real Tape ---
+    File []
+[ ] Inserted
+[ ] Playing
+    Tape Viewer
+    Visual Real Tape
+    Visual Casette Tape
+    Convert Audio to ZX81
+ESC Close
+
+Main Menu-> Settings
+Accessibility
+Configuration file
+Function keys
+General
+Hardware
+Main Window
+ZX Desktop
+ZX Vision
+[ ] Advanced menu items
+ESC Close
+
+Main Menu-> Settings Menu-> ZX Vision Settings
+--- Appearance ---
+    Style [ZEsarUX Plus]
+[ ] Allow set char size > 8
+    Char width [8]
+    Char height [8]
+--- Menus Behaviour ---
+[X] Tooltips
+[X] Multitask menu
+[X] Background windows
+[X]  Even when menu closed
+[X] First aid help
+ESC Close
+
+Main Menu-> Settings Menu-> ZX Desktop Settings
+[X] Enabled
+[X] Open Menu on ZX Desktop
+--- Upper Buttons ---
+[X] Enable
+--- Lower Buttons ---
+[X] Enable
+--- Icons on ZX Desktop ---
+[X] Enable
+--- Background ---
+    Fill type [Solid]
+    Primary Fill Color [Cyan]
+    SCR file []
+ESC Close
+
+Main Menu-> Debug
+Reset
+Generate NMI
+Debug CPU
+Machine Info
+Hexadecimal Editor
+View Sprites
+Visual memory
+Load binary block
+Save binary block
+Ascii Table
+Basic
+Find
+Poke
+ESC Close
+
+Settings Menu-> General Settings
+    Language [Default]
+    Online Download Path []
+[X] Search index enabled
+    Emulator Speed [100%]
+    ZEsarUX logo [Normal]
+ESC Close
+
+Main Menu-> Help
+About
+Help
+Background Windows Help
+Keyboard Help
+Readme
+Features
+Exclusive features
+History
+Acknowledgements
+Donors
+Donate
+FAQ
+Changelog
+Alternate ROMS
+Included tapes
+Install
+Install on Windows
+Compile info
+Statistics
+Core Statistics
+Running info
+Licenses
+In Memoriam
+ESC Close
+
+Main Menu-> Windows
+Process switcher
+Trash Can
+Cascade all windows
+Rearrange all windows
+Reduce all windows
+Minimize all windows
+Maximize all windows
+Close all windows
+ESC Close
+
+Main Menu-> Network
+UART Bridge emulation
+ZX81 online browser
+Speccy online browser
+Download ZEsarUX extras
+Network traffic
+--- Network Gaming ---
+ZENG
+ZENG Online Client
+ESC Close
+
+Main Menu-> Storage
+Tape
+ZXpand emulation
+ESC Close
+
+Main Menu-> Audio
+Audio Chip Registers
+Audio Chip Piano
+Audio Chip Sheet
+Audio Chip Info
+Wave Piano
+Waveform
+AY Player
+--- External Audio Source ---
+[ ] Enable External Audio Source
+AY Mixer
+Audio Chip to .mid
+ESC Close
+

@@ -1,0 +1,283 @@
+#!/usr/bin/env python3
+"""
+png2zx81.py — Convert PNG to a ZX81 C header using 4x4 sparse tile compression.
+
+Pipeline:
+  1. Load PNG, convert to greyscale — 1 source pixel = 1 character cell (both axes)
+  2. Posterise each character cell to a ZX81 char code
+  3. Group into 4x4 character tiles
+  4. Build a palette of unique non-default tiles
+  5. Emit a sparse world map: (tx, ty, tile_idx) triples, 0xFF-terminated
+
+Default tile (all 0x00 / white) is implicit — not stored in the world map.
+By default world size = source image size in pixels (1px = 1 char cell).
+Override with --width N or --height N.
+
+ZX81 grey palette used (verified from ROM at 0x1E00):
+  0x00  =   0% fill  white
+  0x08  =  50% fill  grey  (fine pixel checkerboard — best TV grey)
+  0x80  = 100% fill  black
+
+Posterisation thresholds (brightness: 1.0=white, 0.0=black):
+  >= T_WHITE  ->  0x00
+  >= T_BLACK  ->  0x08
+  <  T_BLACK  ->  0x80
+
+Saves a 256x192 preview PNG alongside the .h file.
+
+Usage:
+    python3 png2zx81.py <input.png> <output.h> [<varname>] [--width N] [--height N]
+"""
+
+import sys
+import os
+
+try:
+    from PIL import Image
+except ImportError:
+    sys.exit("Pillow required: pip install pillow")
+
+# ---------------------------------------------------------------------------
+# Posterisation thresholds
+# ---------------------------------------------------------------------------
+T_WHITE = 0.84   # >= white
+T_BLACK = 0.62   # >= grey, < black
+
+# ---------------------------------------------------------------------------
+# Tile geometry
+# ---------------------------------------------------------------------------
+TILE_W  = 4    # chars per tile, horizontal
+TILE_H  = 4    # chars per tile, vertical
+DEFAULT = 0x00 # char code for the implicit background tile
+
+# ---------------------------------------------------------------------------
+# ZX81 character pixel patterns — 8x8 grid, True = black ink
+# ---------------------------------------------------------------------------
+def _char_grid(code):
+    base = code & 0x7F
+    inv  = bool(code & 0x80)
+    g = [[False] * 8 for _ in range(8)]
+
+    if base == 0x01:        # TL quarter
+        for r in range(4):
+            for c in range(4): g[r][c] = True
+    elif base == 0x02:      # TR quarter
+        for r in range(4):
+            for c in range(4, 8): g[r][c] = True
+    elif base == 0x03:      # top half
+        for r in range(4):
+            for c in range(8): g[r][c] = True
+    elif base == 0x04:      # BL quarter
+        for r in range(4, 8):
+            for c in range(4): g[r][c] = True
+    elif base == 0x05:      # left half
+        for r in range(8):
+            for c in range(4): g[r][c] = True
+    elif base == 0x06:      # TR+BL diagonal
+        for r in range(4):
+            for c in range(4, 8): g[r][c] = True
+        for r in range(4, 8):
+            for c in range(4): g[r][c] = True
+    elif base == 0x07:      # TL+TR+BL (3/4 fill, BR white)
+        for r in range(4):
+            for c in range(8): g[r][c] = True
+        for r in range(4, 8):
+            for c in range(4): g[r][c] = True
+    elif base == 0x08:      # fine checkerboard — TRUE GREY
+        for r in range(8):
+            for c in range(8):
+                if (r + c) % 2 == 0: g[r][c] = True
+    elif base == 0x09:      # bottom-half checkerboard
+        for r in range(4, 8):
+            for c in range(8):
+                if (r + c) % 2 == 0: g[r][c] = True
+    elif base == 0x0A:      # top-half checkerboard
+        for r in range(4):
+            for c in range(8):
+                if (r + c) % 2 == 0: g[r][c] = True
+
+    if inv:
+        g = [[not v for v in row] for row in g]
+    return g
+
+
+# ---------------------------------------------------------------------------
+# Posterisation
+# ---------------------------------------------------------------------------
+def _pick_char(brightness):
+    if brightness >= T_WHITE: return 0x00
+    if brightness >= T_BLACK: return 0x08
+    return 0x80
+
+
+def convert(input_path, world_w, world_h):
+    img = Image.open(input_path).convert('L')
+    img = img.resize((world_w, world_h), Image.LANCZOS)
+    px  = img.load()
+    return [[_pick_char(px[x, y] / 255.0) for x in range(world_w)]
+            for y in range(world_h)]
+
+
+# ---------------------------------------------------------------------------
+# Tile extraction
+# ---------------------------------------------------------------------------
+def _get_tile(chars, tx, ty, world_w, world_h):
+    flat = []
+    for r in range(TILE_H):
+        for c in range(TILE_W):
+            y = ty * TILE_H + r
+            x = tx * TILE_W + c
+            flat.append(chars[y][x] if x < world_w and y < world_h else DEFAULT)
+    return tuple(flat)
+
+
+def extract_tiles(chars, world_w, world_h):
+    tiles_x = (world_w + TILE_W - 1) // TILE_W
+    tiles_y = (world_h + TILE_H - 1) // TILE_H
+
+    palette   = []          # list of flat tuples (TILE_W*TILE_H chars)
+    lookup    = {}          # tuple -> palette index
+    world_map = []          # (tx, ty, tile_idx)
+
+    default_tile = (DEFAULT,) * (TILE_W * TILE_H)
+
+    for ty in range(tiles_y):
+        for tx in range(tiles_x):
+            tile = _get_tile(chars, tx, ty, world_w, world_h)
+            if tile == default_tile:
+                continue
+            if tile not in lookup:
+                lookup[tile] = len(palette)
+                palette.append(tile)
+            world_map.append((tx, ty, lookup[tile]))
+
+    return palette, world_map
+
+
+# ---------------------------------------------------------------------------
+# Preview PNG
+# ---------------------------------------------------------------------------
+def save_preview(chars, output_path, world_w, world_h):
+    preview = Image.new('L', (world_w * 8, world_h * 8), 255)
+    px = preview.load()
+    for y, row in enumerate(chars):
+        for x, code in enumerate(row):
+            grid = _char_grid(code)
+            ox, oy = x * 8, y * 8
+            for r in range(8):
+                for c in range(8):
+                    px[ox + c, oy + r] = 0 if grid[r][c] else 255
+    preview.save(output_path)
+    print(f'Preview  {output_path}  ({world_w * 8}x{world_h * 8}px)')
+
+
+def save_tile_sheet(palette, output_path):
+    tile_px_w = TILE_W * 8
+    tile_px_h = TILE_H * 8
+    img = Image.new('L', (tile_px_w, tile_px_h * len(palette)), 255)
+    px = img.load()
+    for i, tile in enumerate(palette):
+        for r in range(TILE_H):
+            for c in range(TILE_W):
+                code = tile[r * TILE_W + c]
+                grid = _char_grid(code)
+                ox = c * 8
+                oy = i * tile_px_h + r * 8
+                for gr in range(8):
+                    for gc in range(8):
+                        px[ox + gc, oy + gr] = 0 if grid[gr][gc] else 255
+    img.save(output_path)
+    print(f'Tiles    {output_path}  ({len(palette)} tiles, {tile_px_w}x{tile_px_h * len(palette)}px)')
+
+
+# ---------------------------------------------------------------------------
+# C header output
+# ---------------------------------------------------------------------------
+def write_header(palette, world_map, varname, output_path, input_path, world_w, world_h):
+    guard = (os.path.basename(output_path)
+             .upper().replace('.', '_').replace('-', '_'))
+
+    tiles_x = (world_w + TILE_W - 1) // TILE_W
+    tiles_y = (world_h + TILE_H - 1) // TILE_H
+
+    with open(output_path, 'w') as f:
+        f.write(f'#ifndef {guard}\n')
+        f.write(f'#define {guard}\n')
+        f.write(f'#include "world_api.h"\n')
+        f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
+        f.write(f'/* World: {world_w} x {world_h} chars  ({tiles_x} x {tiles_y} tiles of {TILE_W}x{TILE_H}) */\n')
+        f.write(f'/* Tiles: {len(palette)} unique  |  Sparse entries: {len(world_map)} */\n\n')
+
+        f.write(f'#define {varname.upper()}_TILE_W    {TILE_W}\n')
+        f.write(f'#define {varname.upper()}_TILE_H    {TILE_H}\n')
+        f.write(f'#define {varname.upper()}_N_TILES   {len(palette)}\n')
+        f.write(f'#define {varname.upper()}_WORLD_W   {world_w}\n')
+        f.write(f'#define {varname.upper()}_WORLD_H   {world_h}\n\n')
+
+        # Tile palette
+        f.write(f'static const char {varname}_tiles[{len(palette)}][{TILE_H}][{TILE_W}] = {{\n')
+        for i, tile in enumerate(palette):
+            rows = []
+            for r in range(TILE_H):
+                vals = ', '.join(f'0x{tile[r*TILE_W + c]:02X}' for c in range(TILE_W))
+                rows.append(f'{{ {vals} }}')
+            f.write(f'    /* {i:2d} */ {{ {", ".join(rows)} }},\n')
+        f.write('};\n\n')
+
+        # Sparse world map — tx, ty, tile_idx triples, 0xFF sentinel
+        f.write(f'/* tx, ty, tile_idx triples — 0xFF terminates */\n')
+        f.write(f'static const unsigned char {varname}_world[] = {{\n')
+        for tx, ty, ti in world_map:
+            f.write(f'    {tx}, {ty}, {ti},\n')
+        f.write('    0xFF\n')
+        f.write('};\n\n')
+
+        # Pre-built World struct instance
+        f.write(f'static const World {varname} = {{\n')
+        f.write(f'    (const char *){varname}_tiles,\n')
+        f.write(f'    {varname}_world,\n')
+        f.write(f'    {TILE_W},\n')
+        f.write(f'    {TILE_H},\n')
+        f.write(f'}};\n\n')
+
+        f.write(f'#endif /* {guard} */\n')
+
+    tile_bytes  = len(palette) * TILE_W * TILE_H
+    map_bytes   = len(world_map) * 3 + 1   # triples + 0xFF sentinel
+    total_bytes = tile_bytes + map_bytes
+    print(f'Header   {output_path}')
+    print(f'  Tiles   : {len(palette):4d} unique  x {TILE_W*TILE_H} bytes = {tile_bytes:5d} bytes')
+    print(f'  Map     : {len(world_map):4d} entries x 3 bytes = {map_bytes:5d} bytes')
+    print(f'  Total   : {total_bytes:5d} bytes  ({total_bytes/1024:.1f} KB)')
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+def main():
+    args = sys.argv[1:]
+    if len(args) < 2:
+        print(__doc__)
+        sys.exit(1)
+
+    input_path  = args[0]
+    output_path = args[1]
+    varname     = args[2] if len(args) > 2 and not args[2].startswith('--') else 'bg'
+
+    src_w, src_h = Image.open(input_path).size
+    world_w = int(args[args.index('--width')  + 1]) if '--width'  in args else src_w
+    world_h = int(args[args.index('--height') + 1]) if '--height' in args else src_h
+
+    base, _       = os.path.splitext(output_path)
+    preview_path  = base + '_preview.png'
+    tiles_path    = base + '_tiles.png'
+
+    chars = convert(input_path, world_w, world_h)
+    save_preview(chars, preview_path, world_w, world_h)
+    palette, world_map = extract_tiles(chars, world_w, world_h)
+    save_tile_sheet(palette, tiles_path)
+    write_header(palette, world_map, varname, output_path, input_path, world_w, world_h)
+
+
+if __name__ == '__main__':
+    main()
