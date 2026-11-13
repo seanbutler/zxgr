@@ -85,6 +85,7 @@ main()
 {
     int scroll_x = 0;
     int scroll_y = 0;
+    int px = 14, py = 12;   /* player position (center of screen) */
     struct enemy enemies[NUM_ENEMIES] = {
         {1,  1,   1},
         {2,  2,   1},
@@ -107,6 +108,7 @@ main()
         int i;
         wait_frame();
 
+        player_erase(px, py, bg_scene);
         for (i = 0; i < NUM_ENEMIES; i++)
             erase_sprite(enemies[i].x, enemies[i].y, bg_scene);
 
@@ -117,5 +119,7 @@ main()
             if (enemies[i].x < 0)                { enemies[i].x = 0;                enemies[i].dx =  1; }
             draw_sprite(enemies[i].x, enemies[i].y);
         }
+
+        player_draw(px, py);
     }
 }

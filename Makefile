@@ -5,17 +5,21 @@ export PATH    := $(Z88DK)/bin:$(PATH)
 export ZCCCFG  := $(Z88DK)/lib/config/
 
 TARGET  = gr
-SRC     = gr.c sprite.c world.c
+SRC     = src/gr.c src/sprite.c src/world.c
+BUILD   = build
 
 .PHONY: all run clean
 
-all: $(TARGET).P
+all: $(BUILD)/$(TARGET).P
 
-$(TARGET).P: $(SRC)
-	zcc +zx81 -create-app -o $(TARGET) $(SRC)
+$(BUILD)/$(TARGET).P: $(SRC) | $(BUILD)
+	zcc +zx81 -create-app -o $(BUILD)/$(TARGET) $(SRC)
 
-run: $(TARGET).P
-	$(ZESARUX) --machine ZX81 $(TARGET).P &
+$(BUILD):
+	mkdir -p $(BUILD)
+
+run: $(BUILD)/$(TARGET).P
+	$(ZESARUX) --machine ZX81 $(BUILD)/$(TARGET).P &
 
 clean:
-	rm -f $(TARGET).P $(TARGET).bin $(TARGET)_*.bin *.lis *.sym *.map zcc_opt.def
+	rm -f $(BUILD)/$(TARGET).P $(BUILD)/$(TARGET).bin $(BUILD)/$(TARGET)_*.bin *.lis *.sym *.map zcc_opt.def
