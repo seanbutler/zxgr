@@ -51,15 +51,15 @@ void erase_sprite(int x, int y, char *bg_scene)
 
 
 /*
- * 4x3 humanoid player (solid black):
+ * 4x3 humanoid player:
  *   space, full, full, space    (head)
  *   full,  full, full, full     (body)
  *   full,  space, space, full   (legs)
  */
 static const char player[PLAYER_H][PLAYER_W] = {
-    { CH_FULL,  CH_FULL, CH_FULL, CH_FULL  },
-    { CH_FULL,  CH_FULL, CH_FULL, CH_FULL  },
-    { CH_FULL,  CH_FULL, CH_FULL, CH_FULL  },
+    { CH_SPACE, CH_GREY,  CH_GREY,  CH_SPACE },
+    { CH_FULL,  CH_FULL,  CH_FULL,  CH_FULL  },
+    { CH_GREY,  CH_SPACE, CH_SPACE, CH_GREY  },
 };
 
 void player_draw(int x, int y)

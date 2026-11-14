@@ -19,7 +19,6 @@
 #include "sprite.h"
 #include "world_api.h"
 #include "world_bg.h"
-#include "bg_scene.h"
 
 /* D_FILE system variable holds address of the display buffer */
 #define D_FILE_SYSVAR 16396
@@ -49,10 +48,36 @@ static char bg_scene[SCREEN_H * SCREEN_W];
 static void fill_bg_scene(int scroll_x, int scroll_y)
 {
     int x, y;
-    for (y = 0; y < SCREEN_H; y++)
-        for (x = 0; x < SCREEN_W; x++)
-            bg_scene[y * SCREEN_W + x] = world_char_at(&world_bg, scroll_x + x, scroll_y + y);
+    for (y = 0; y < SCREEN_H; y++) {
+        for (x = 0; x < SCREEN_W; x++) {
+            bg_scene[y * SCREEN_W + x] = 
+                world_char_at(&world_bg, 
+                        scroll_x + x, 
+                        scroll_y + y);
+        }
+    }
 }
+
+/* ------------------------------------------------------------------ */
+/* Keyboard                                                             */
+/* ------------------------------------------------------------------ */
+
+static unsigned char read_port(unsigned int port)
+{
+#asm
+    ld b, h
+    ld c, l
+    in a, (c)
+    ld l, a
+    ld h, 0
+#endasm
+}
+
+#define key_pressed(k)  (k)
+#define KEY_UP    (!(read_port(0xFBFE) & 0x01))  /* Q */
+#define KEY_DOWN  (!(read_port(0xFDFE) & 0x01))  /* A */
+#define KEY_LEFT  (!(read_port(0xDFFE) & 0x02))  /* O */
+#define KEY_RIGHT (!(read_port(0xDFFE) & 0x01))  /* P */
 
 /* ------------------------------------------------------------------ */
 /* Frame sync: spin until the FRAMES counter (50 Hz) ticks             */
@@ -86,6 +111,7 @@ main()
     int scroll_x = 0;
     int scroll_y = 0;
     int px = 14, py = 12;   /* player position (center of screen) */
+
     struct enemy enemies[NUM_ENEMIES] = {
         {1,  1,   1},
         {2,  2,   1},
@@ -107,18 +133,25 @@ main()
     {
         int i;
         wait_frame();
+     
+        if ( key_pressed(KEY_UP)    && py > 0)          py--;
+        if ( key_pressed(KEY_DOWN)  && py < SCREEN_H-PLAYER_H) py++;
+        if ( key_pressed(KEY_LEFT)  && px > 0)          px--;
+        if ( key_pressed(KEY_RIGHT) && px < SCREEN_W-PLAYER_W) px++;
+            
 
         player_erase(px, py, bg_scene);
-        for (i = 0; i < NUM_ENEMIES; i++)
-            erase_sprite(enemies[i].x, enemies[i].y, bg_scene);
 
-        for (i = 0; i < NUM_ENEMIES; i++)
-        {
-            enemies[i].x += enemies[i].dx;
-            if (enemies[i].x > SCREEN_W - SPR_W) { enemies[i].x = SCREEN_W - SPR_W; enemies[i].dx = -1; }
-            if (enemies[i].x < 0)                { enemies[i].x = 0;                enemies[i].dx =  1; }
-            draw_sprite(enemies[i].x, enemies[i].y);
-        }
+        // for (i = 0; i < NUM_ENEMIES; i++)
+        //     erase_sprite(enemies[i].x, enemies[i].y, bg_scene);
+
+        // for (i = 0; i < NUM_ENEMIES; i++)
+        // {
+        //     enemies[i].x += enemies[i].dx;
+        //     if (enemies[i].x > SCREEN_W - SPR_W) { enemies[i].x = SCREEN_W - SPR_W; enemies[i].dx = -1; }
+        //     if (enemies[i].x < 0)                { enemies[i].x = 0;                enemies[i].dx =  1; }
+        //     draw_sprite(enemies[i].x, enemies[i].y);
+        // }
 
         player_draw(px, py);
     }

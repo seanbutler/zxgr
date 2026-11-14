@@ -1,0 +1,68 @@
+Main Menu
+Smart load
+Snapshot
+Machine
+Audio
+Display
+Storage
+Debug
+Network
+Windows
+Settings
+Search menu
+Procrastinate
+Help
+ESC Close menu
+F10 Exit ZEsarUX
+
+Main Menu-> Display
+Save Screen
+Quicksave Screen
+View Screen
+Video Output
+View Colour Palettes
+On Screen Keyboard
+Text Adventure Tools
+ESC Close
+
+Main Menu-> Audio
+Audio Chip Registers
+Audio Chip Piano
+Audio Chip Sheet
+Audio Chip Info
+Wave Piano
+Waveform
+AY Player
+--- External Audio Source ---
+[ ] Enable External Audio Source
+AY Mixer
+Audio Chip to .mid
+ESC Close
+
+Main Menu-> Settings
+Accessibility
+Configuration file
+Function keys
+General
+Hardware
+Main Window
+ZX Desktop
+ZX Vision
+[ ] Advanced menu items
+ESC Close
+
+Main Menu-> Settings Menu-> ZX Desktop Settings
+[X] Enabled
+[X] Open Menu on ZX Desktop
+--- Upper Buttons ---
+[X] Enable
+--- Lower Buttons ---
+[X] Enable
+--- Icons on ZX Desktop ---
+[X] Enable
+--- Background ---
+    Fill type [Solid]
+    Primary Fill Color [Cyan]
+    SCR file []
+ESC Close
+
