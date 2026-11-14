@@ -6,7 +6,7 @@ export ZCCCFG  := $(Z88DK)/lib/config/
 
 TARGET    = gr
 SRC       = src/main.c src/lib/core/dfile.c src/lib/gfx/sprite.c src/world.c src/lib/math/rng.c
-INCLUDES  = -Isrc -Isrc/lib/core -Isrc/lib/gfx -Isrc/lib/math
+INCLUDES  = -Isrc -Isrc/lib/core -Isrc/lib/gfx -Isrc/lib/math -Isrc/lib/input
 BUILD     = build
 WORLD_H   = src/world_bg.h
 WORLD_PNG = assets/world.png
