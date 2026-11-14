@@ -15,30 +15,12 @@
 #pragma string name GrDemo
 
 #include <zx81.h>
+#include "dfile.h"
 #include "zx81_semigraphics.h"
 #include "sprite.h"
 #include "world_api.h"
 #include "world_bg.h"
 #include "rng.h"
-
-/* D_FILE system variable holds address of the display buffer */
-#define D_FILE_SYSVAR 16396
-
-char *dfile;
-
-/* ------------------------------------------------------------------ */
-/* Display helpers                                                      */
-/* ------------------------------------------------------------------ */
-
-static void init_dfile(void)
-{
-    dfile = (char *)(*(unsigned int *)D_FILE_SYSVAR) + 1;
-}
-
-void put_char(int x, int y, char c)
-{
-    dfile[y * 33 + x] = c;
-}
 
 /* ------------------------------------------------------------------ */
 /* World                                                                */
@@ -50,7 +32,7 @@ static void fill_bg_scene(void)
 {
     int x, y;
     for (y = 0; y < SCREEN_H; y++) {
-        const char *src = dfile + y * 33;
+        const char *src = dfile + y * DFILE_STRIDE;
         char *dst = bg_scene + y * SCREEN_W;
         for (x = 0; x < SCREEN_W; x++)
             dst[x] = src[x];
@@ -109,17 +91,19 @@ main()
     Sprite enemies[MAX_NUM_ENEMIES];
     int i;
 
-    sprite_init(&player, 8, 8, 0, 0);
+    sprite_init(&player, 8, 8, 4, 3, 0, 0, shape_player);
 
     for (i = 0; i < MAX_NUM_ENEMIES; i++) {
         sprite_init(&enemies[i],
-            rng_next() % (SCREEN_W - SPR_W),
-            rng_next() % (SCREEN_H - SPR_H),
+            rng_next() % (SCREEN_W - 2),
+            rng_next() % (SCREEN_H - 2),
+            2, 2,
             (rng_next() & 1) ? 1 : -1,
-            (rng_next() & 1) ? 1 : -1);
+            (rng_next() & 1) ? 1 : -1,
+            shape_enemy);
     }
 
-    init_dfile();
+    dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
     fill_bg_scene();
 
@@ -127,27 +111,80 @@ main()
     {
         wait_frame();
 
-        player_erase(&player, bg_scene);
-        player.dx = 0;
-        player.dy = 0;
-        if (key_pressed(KEY_UP)    && player.y > 0)                  player.dy = -1;
-        if (key_pressed(KEY_DOWN)  && player.y < SCREEN_H-PLAYER_H)  player.dy =  1;
-        if (key_pressed(KEY_LEFT)  && player.x > 0)                  player.dx = -1;
-        if (key_pressed(KEY_RIGHT) && player.x < SCREEN_W-PLAYER_W)  player.dx =  1;
-        sprite_move(&player);
+        sprite_erase(&player, bg_scene);
 
         for (i = 0; i < MAX_NUM_ENEMIES; i++)
+        {
             sprite_erase(&enemies[i], bg_scene);
+        }
+
+
+        if (key_pressed(KEY_UP)    && player.y > 0)
+        {
+            player.dy = -1;
+        }
+        else if (key_pressed(KEY_DOWN)  && player.y < SCREEN_H-player.h)
+        {
+            player.dy =  1;
+        }   
+        else 
+        {
+            player.dy = 0;
+        }   
+
+        if (key_pressed(KEY_LEFT)  && player.x > 0)
+        {
+            player.dx = -1; 
+        }
+        else if (key_pressed(KEY_RIGHT) && player.x < SCREEN_W-player.w)
+        {
+            player.dx =  1;
+        }
+        else 
+        {
+            player.dx = 0;
+        }
+
+        sprite_move(&player);
+
+
+        //
+        // Handle the Enemy Sprites
+        //
 
         for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+            
             sprite_move(&enemies[i]);
-            if (enemies[i].x > SCREEN_W - SPR_W) { enemies[i].x = SCREEN_W - SPR_W; enemies[i].dx = -1; }
-            if (enemies[i].x < 0)                { enemies[i].x = 0;                enemies[i].dx =  1; }
-            if (enemies[i].y > SCREEN_H - SPR_H) { enemies[i].y = SCREEN_H - SPR_H; enemies[i].dy = -1; }
-            if (enemies[i].y < 0)                { enemies[i].y = 0;                enemies[i].dy =  1; }
+
+            if (enemies[i].x > SCREEN_W - enemies[i].w) 
+            { 
+                enemies[i].x = SCREEN_W - enemies[i].w;
+                enemies[i].dx = -1; 
+            }
+            else if (enemies[i].x < 0)
+            { 
+                enemies[i].x = 0;
+                enemies[i].dx =  1;
+            }
+
+            if (enemies[i].y > SCREEN_H - enemies[i].h) 
+            { 
+                enemies[i].y = SCREEN_H - enemies[i].h;  
+                enemies[i].dy = -1; 
+            }
+            
+            if (enemies[i].y < 0) 
+            { 
+                enemies[i].y = 0;                        
+                enemies[i].dy =  1; 
+            }
+
             sprite_draw(&enemies[i]);
         }
 
-        player_draw(&player);
+
+
+
+        sprite_draw(&player);
     }
 }

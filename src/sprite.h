@@ -6,23 +6,19 @@
 
 #include "zx81_semigraphics.h"
 
-#define SPR_W  2
-#define SPR_H  2
-
-#define PLAYER_W  4
-#define PLAYER_H  3
-
 typedef struct {
     int x, y;
+    int w, h;
     int dx, dy;
+    const char *data;
 } Sprite;
 
-void sprite_init(Sprite *s, int x, int y, int dx, int dy);
+extern const char shape_enemy[];
+extern const char shape_player[];
+
+void sprite_init(Sprite *s, int x, int y, int w, int h, int dx, int dy, const char *data);
 void sprite_move(Sprite *s);
 void sprite_draw(const Sprite *s);
 void sprite_erase(const Sprite *s, const char *bg);
-
-void player_draw(const Sprite *s);
-void player_erase(const Sprite *s, const char *bg);
 
 #endif

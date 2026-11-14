@@ -3,8 +3,7 @@
 #define SCREEN_W  32
 #define SCREEN_H  24
 
-extern char *dfile;
-extern void put_char(int x, int y, char c);
+#include "dfile.h"
 
 static void blit_tile(const World *w, int ti, int screen_x, int screen_y)
 {
@@ -15,7 +14,7 @@ static void blit_tile(const World *w, int ti, int screen_x, int screen_y)
     for (r = 0; r < w->tile_h; r++) {
         sy = screen_y + r;
         if (sy >= 0 && sy < SCREEN_H) {
-            char *dst = dfile + sy * 33 + screen_x;
+            char *dst = dfile + sy * DFILE_STRIDE + screen_x;
             for (c = 0; c < w->tile_w; c++) {
                 int sx = screen_x + c;
                 if (sx >= 0 && sx < SCREEN_W)
