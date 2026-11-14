@@ -5,6 +5,24 @@
 
 #include "dfile.h"
 
+static char bg_scene[SCREEN_H * SCREEN_W];
+
+void world_cache_bg(void)
+{
+    int x, y;
+    for (y = 0; y < SCREEN_H; y++) {
+        const char *src = dfile + y * DFILE_STRIDE;
+        char *dst = bg_scene + y * SCREEN_W;
+        for (x = 0; x < SCREEN_W; x++)
+            dst[x] = src[x];
+    }
+}
+
+const char *world_bg_scene(void)
+{
+    return bg_scene;
+}
+
 static void blit_tile(const World *w, int ti, int screen_x, int screen_y)
 {
     int stride = (int)w->tile_w * (int)w->tile_h;
@@ -36,7 +54,7 @@ void world_draw(const World *w, int scroll_x, int scroll_y)
         for (r = 0; r < SCREEN_H; r++)
             for (c = 0; c < SCREEN_W; c++)
                 // put_char(c, r, 0x80);
-                put_char(c, r, 0x00);
+                dfile_put_char(c, r, 0x00);
     }
 
     p = w->map;

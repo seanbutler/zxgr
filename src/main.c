@@ -22,23 +22,6 @@
 #include "world_bg.h"
 #include "rng.h"
 
-/* ------------------------------------------------------------------ */
-/* World                                                                */
-/* ------------------------------------------------------------------ */
-
-static char bg_scene[SCREEN_H * SCREEN_W];
-
-static void fill_bg_scene(void)
-{
-    int x, y;
-    for (y = 0; y < SCREEN_H; y++) {
-        const char *src = dfile + y * DFILE_STRIDE;
-        char *dst = bg_scene + y * SCREEN_W;
-        for (x = 0; x < SCREEN_W; x++)
-            dst[x] = src[x];
-    }
-}
-
 #include "keyboard.h"
 
 #include "timing.h"
@@ -47,7 +30,7 @@ static void fill_bg_scene(void)
 /* Entry point                                                          */
 /* ------------------------------------------------------------------ */
 
-#define MAX_NUM_ENEMIES 4
+#define MAX_NUM_ENEMIES 2
 
 main()
 {
@@ -72,86 +55,41 @@ main()
 
     dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
-    fill_bg_scene();
+    world_cache_bg();
 
     while (1)
     {
+
         wait_frame();
 
-        sprite_erase(&player, bg_scene);
-
-        for (i = 0; i < MAX_NUM_ENEMIES; i++)
-        {
-            sprite_erase(&enemies[i], bg_scene);
-        }
-
-
-        if (key_pressed(KEY_UP)    && player.y > 0)
-        {
-            player.dy = -1;
-        }
-        else if (key_pressed(KEY_DOWN)  && player.y < SCREEN_H-player.h)
-        {
-            player.dy =  1;
-        }   
-        else 
-        {
-            player.dy = 0;
-        }   
-
-        if (key_pressed(KEY_LEFT)  && player.x > 0)
-        {
-            player.dx = -1; 
-        }
-        else if (key_pressed(KEY_RIGHT) && player.x < SCREEN_W-player.w)
-        {
-            player.dx =  1;
-        }
-        else 
-        {
-            player.dx = 0;
-        }
-
-        sprite_move(&player);
-
-
         //
-        // Handle the Enemy Sprites
+        //  enemies: erase, move, draw
         //
 
         for (i = 0; i < MAX_NUM_ENEMIES; i++) {
-            
+            sprite_erase(&enemies[i], world_bg_scene());
             sprite_move(&enemies[i]);
-
-            if (enemies[i].x > SCREEN_W - enemies[i].w) 
-            { 
-                enemies[i].x = SCREEN_W - enemies[i].w;
-                enemies[i].dx = -1; 
-            }
-            else if (enemies[i].x < 0)
-            { 
-                enemies[i].x = 0;
-                enemies[i].dx =  1;
-            }
-
-            if (enemies[i].y > SCREEN_H - enemies[i].h) 
-            { 
-                enemies[i].y = SCREEN_H - enemies[i].h;  
-                enemies[i].dy = -1; 
-            }
-            
-            if (enemies[i].y < 0) 
-            { 
-                enemies[i].y = 0;                        
-                enemies[i].dy =  1; 
-            }
-
+    
+            if (enemies[i].x > SCREEN_W - enemies[i].w) { enemies[i].x = SCREEN_W - enemies[i].w; enemies[i].dx = -1; }
+            else if (enemies[i].x < 0)                  { enemies[i].x = 0;                        enemies[i].dx =  1; }
+            if (enemies[i].y > SCREEN_H - enemies[i].h) { enemies[i].y = SCREEN_H - enemies[i].h;  enemies[i].dy = -1; }
+            else if (enemies[i].y < 0)                  { enemies[i].y = 0;                         enemies[i].dy =  1; }
             sprite_draw(&enemies[i]);
         }
 
-
-
-
+        //
+        // player: erase, move, draw — kept tight to minimise flicker
+        //
+        
+        sprite_erase(&player, world_bg_scene());
+        player.dx = 0;
+        player.dy = 0;
+        if      (key_pressed(KEY_UP)    && player.y > 0)                 player.dy = -1;
+        else if (key_pressed(KEY_DOWN)  && player.y < SCREEN_H-player.h) player.dy =  1;
+        if      (key_pressed(KEY_LEFT)  && player.x > 0)                 player.dx = -1;
+        else if (key_pressed(KEY_RIGHT) && player.x < SCREEN_W-player.w) player.dx =  1;
+        sprite_move(&player);
         sprite_draw(&player);
+
     }
 }

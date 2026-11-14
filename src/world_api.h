@@ -9,6 +9,8 @@ typedef struct {
 } World;
 
 void world_draw(const World *w, int scroll_x, int scroll_y);
+void world_cache_bg(void);
+const char *world_bg_scene(void);
 char world_char_at(const World *w, int wx, int wy);
 
 #endif /* WORLD_API_H */

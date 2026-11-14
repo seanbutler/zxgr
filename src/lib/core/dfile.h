@@ -6,6 +6,6 @@
 extern char *dfile;
 
 void dfile_init(void);
-void put_char(int x, int y, char c);
+void dfile_put_char(int x, int y, char c);
 
 #endif

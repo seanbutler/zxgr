@@ -50,7 +50,7 @@ void sprite_erase(const Sprite *s, const char *bg)
         for (c = 0; c < s->w; c++) {
             int sx = s->x + c;
             if (sx < SCREEN_W)
-                put_char(sx, sy, bg[sy * SCREEN_W + sx]);
+                dfile_put_char(sx, sy, bg[sy * SCREEN_W + sx]);
         }
     }
 }
