@@ -9,17 +9,20 @@ extern void put_char(int x, int y, char c);
 static void blit_tile(const World *w, int ti, int screen_x, int screen_y)
 {
     int stride = (int)w->tile_w * (int)w->tile_h;
-    const char *tile = w->tiles + ti * stride;
-    int r, c, sx, sy;
+    const char *src = w->tiles + ti * stride;
+    int r, c, sy;
 
     for (r = 0; r < w->tile_h; r++) {
         sy = screen_y + r;
-        if (sy < 0 || sy >= SCREEN_H) continue;
-        for (c = 0; c < w->tile_w; c++) {
-            sx = screen_x + c;
-            if (sx >= 0 && sx < SCREEN_W)
-                put_char(sx, sy, tile[r * w->tile_w + c]);
+        if (sy >= 0 && sy < SCREEN_H) {
+            char *dst = dfile + sy * 33 + screen_x;
+            for (c = 0; c < w->tile_w; c++) {
+                int sx = screen_x + c;
+                if (sx >= 0 && sx < SCREEN_W)
+                    dst[c] = src[c];
+            }
         }
+        src += w->tile_w;
     }
 }
 
@@ -33,6 +36,7 @@ void world_draw(const World *w, int scroll_x, int scroll_y)
         int r, c;
         for (r = 0; r < SCREEN_H; r++)
             for (c = 0; c < SCREEN_W; c++)
+                // put_char(c, r, 0x80);
                 put_char(c, r, 0x00);
     }
 
