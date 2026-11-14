@@ -5,7 +5,7 @@ export PATH    := $(Z88DK)/bin:$(PATH)
 export ZCCCFG  := $(Z88DK)/lib/config/
 
 TARGET  = gr
-SRC     = src/gr.c src/dfile.c src/sprite.c src/world.c src/rng.c
+SRC     = src/main.c src/dfile.c src/sprite.c src/world.c src/rng.c
 BUILD   = build
 
 .PHONY: all run clean
