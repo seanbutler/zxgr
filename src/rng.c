@@ -16,3 +16,5 @@ int rng_next(void)
     rng_state ^= rng_state << 3;
     return rng_state;
 }
+
+

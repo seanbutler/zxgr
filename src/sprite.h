@@ -6,16 +6,23 @@
 
 #include "zx81_semigraphics.h"
 
-#define SPR_W  3
+#define SPR_W  2
 #define SPR_H  2
 
 #define PLAYER_W  4
 #define PLAYER_H  3
 
-void draw_sprite(int x, int y);
-void erase_sprite(int x, int y, char *bg_scene);
-void player_draw(int x, int y);
-void player_erase(int x, int y, char *bg_scene);
+typedef struct {
+    int x, y;
+    int dx, dy;
+} Sprite;
 
+void sprite_init(Sprite *s, int x, int y, int dx, int dy);
+void sprite_move(Sprite *s);
+void sprite_draw(const Sprite *s);
+void sprite_erase(const Sprite *s, const char *bg);
+
+void player_draw(const Sprite *s);
+void player_erase(const Sprite *s, const char *bg);
 
 #endif

@@ -98,26 +98,25 @@ wf_spin:
 /* Entry point                                                          */
 /* ------------------------------------------------------------------ */
 
-struct enemy {
-    int x, y;
-    int dx;
-};
-
-#define NUM_ENEMIES 4
+#define MAX_NUM_ENEMIES 4
 
 main()
 {
     int scroll_x = 0;
     int scroll_y = 0;
-    int px = 8, py = 8;   /* player position (center of screen) */
 
-    struct enemy enemies[NUM_ENEMIES];
+    Sprite player;
+    Sprite enemies[MAX_NUM_ENEMIES];
     int i;
 
-    for (i = 0; i < NUM_ENEMIES; i++) {
-        enemies[i].x  = rng_next() % (SCREEN_W - SPR_W);
-        enemies[i].y  = rng_next() % (SCREEN_H - SPR_H);
-        enemies[i].dx = (rng_next() & 1) ? 1 : -1;
+    sprite_init(&player, 8, 8, 0, 0);
+
+    for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+        sprite_init(&enemies[i],
+            rng_next() % (SCREEN_W - SPR_W),
+            rng_next() % (SCREEN_H - SPR_H),
+            (rng_next() & 1) ? 1 : -1,
+            (rng_next() & 1) ? 1 : -1);
     }
 
     init_dfile();
@@ -127,27 +126,28 @@ main()
     while (1)
     {
         wait_frame();
-     
-        // if ( key_pressed(KEY_UP)    && py > 0)          py--;
-        // if ( key_pressed(KEY_DOWN)  && py < SCREEN_H-PLAYER_H) py++;
-        // if ( key_pressed(KEY_LEFT)  && px > 0)          px--;
-        // if ( key_pressed(KEY_RIGHT) && px < SCREEN_W-PLAYER_W) px++;
-            
 
-        // player_erase(px, py, bg_scene);
+        player_erase(&player, bg_scene);
+        player.dx = 0;
+        player.dy = 0;
+        if (key_pressed(KEY_UP)    && player.y > 0)                  player.dy = -1;
+        if (key_pressed(KEY_DOWN)  && player.y < SCREEN_H-PLAYER_H)  player.dy =  1;
+        if (key_pressed(KEY_LEFT)  && player.x > 0)                  player.dx = -1;
+        if (key_pressed(KEY_RIGHT) && player.x < SCREEN_W-PLAYER_W)  player.dx =  1;
+        sprite_move(&player);
 
-        for (i = 0; i < NUM_ENEMIES; i++)
-            erase_sprite(enemies[i].x, enemies[i].y, bg_scene);
+        for (i = 0; i < MAX_NUM_ENEMIES; i++)
+            sprite_erase(&enemies[i], bg_scene);
 
-
-        for (i = 0; i < NUM_ENEMIES; i++)
-        {
-            enemies[i].x += enemies[i].dx;
+        for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+            sprite_move(&enemies[i]);
             if (enemies[i].x > SCREEN_W - SPR_W) { enemies[i].x = SCREEN_W - SPR_W; enemies[i].dx = -1; }
             if (enemies[i].x < 0)                { enemies[i].x = 0;                enemies[i].dx =  1; }
-            draw_sprite(enemies[i].x, enemies[i].y);
+            if (enemies[i].y > SCREEN_H - SPR_H) { enemies[i].y = SCREEN_H - SPR_H; enemies[i].dy = -1; }
+            if (enemies[i].y < 0)                { enemies[i].y = 0;                enemies[i].dy =  1; }
+            sprite_draw(&enemies[i]);
         }
 
-        // player_draw(px, py);
+        player_draw(&player);
     }
 }

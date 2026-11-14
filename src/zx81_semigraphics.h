@@ -41,6 +41,7 @@
 
 /* ---- 75% fill (three quadrants) --------------------------------------- */
 #define CH_3QTR     0x07   /* TL+TR+BL filled (bottom-right quadrant white)  */
+#define CH_INV_BR   0x07   /* all except BR  (75% fill: TL+TR+BL)           */
 
 /* ---- 100% fill -------------------------------------------------------- */
 #define CH_FULL     0x80   /* full block (all black) = inverse space         */

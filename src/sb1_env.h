@@ -1,6 +1,7 @@
 #ifndef SB1_ENV_H
 #define SB1_ENV_H
 #include "world_api.h"
+
 /* Generated from world.png -- do not edit */
 /* World: 128 x 96 chars  (32 x 24 tiles of 4x4) */
 /* Tiles: 26 unique  |  Sparse entries: 738 */
