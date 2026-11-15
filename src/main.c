@@ -148,6 +148,37 @@ main()
 
         player.dy = (key_pressed(KEY_DOWN) && player_wy < WORLD_BG_WORLD_H - player.h) - (key_pressed(KEY_UP)    && player_wy > 0);
 
+        /* environment collision — only test positions inside the current screen */
+        {
+            const char *bg = world_bg_scene();
+            int nx, ny, r, c;
+            if (player.dx != 0) {
+                nx = player.x + player.dx;
+                if (nx >= 0 && nx + player.w <= GAME_W) {
+                    int cx = (player.dx > 0) ? nx + player.w - 1 : nx;
+                    for (r = 0; r < player.h; r++) {
+                        int sy = player.y + r;
+                        if (sy >= 0 && sy < GAME_H && bg[sy * GAME_W + cx]) {
+                            player.dx = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (player.dy != 0) {
+                ny = player.y + player.dy;
+                if (ny >= 0 && ny + player.h <= GAME_H) {
+                    int cy = (player.dy > 0) ? ny + player.h - 1 : ny;
+                    for (c = 0; c < player.w; c++) {
+                        int sx = player.x + c;
+                        if (sx >= 0 && sx < GAME_W && bg[cy * GAME_W + sx]) {
+                            player.dy = 0;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         if (sprite_is_moving(&player)) 
         {
