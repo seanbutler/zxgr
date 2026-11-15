@@ -25,6 +25,7 @@
 #include "shape_enemy.h"
 #include "world_bg.h"
 #include "rng.h"
+#include "boon.h"
 
 #include "keyboard.h"
 
@@ -38,6 +39,42 @@
 
 main()
 {
+
+    //
+    // SPLASH SCREEN HERE
+    //
+    
+    itn counter = 0xFF;
+    while(counter > 0) 
+    { 
+        counter--; 
+    
+    
+    
+    
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//
+// GAMEPLAY HERE
+//
+
     int scroll_x = 0;
     int scroll_y = 0;
 
@@ -64,6 +101,7 @@ main()
 
     dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
+    boon_draw_all(scroll_x, scroll_y);
     world_cache_bg();
     sprite_draw(&player);
 
@@ -87,14 +125,29 @@ main()
             ZX81_INV(CH_H), ZX81_INV(CH_E), ZX81_INV(CH_A), ZX81_INV(CH_L), ZX81_INV(CH_T), ZX81_INV(CH_H)
         };
 
-        /* MAP UNDERNEATH */
+
+        dfile_put_zdata(x, y++, health_text, ZSTR_LEN(health_text)+1);
+        dfile_put_num (x, y++, 10);  /* health value */
+
+        y++;
+
+                /* MAP UNDERNEATH */
         char map_text[] = { ZX81_INV(CH_M), ZX81_INV(CH_A), ZX81_INV(CH_P) };
 
-        dfile_put_zdata(x, y++, health_text, ZSTR_LEN(health_text));
-        dfile_put_zdata(x, y++, map_text, ZSTR_LEN(map_text));
+        dfile_put_zdata(x, y++, map_text, ZSTR_LEN(map_text)+1);
 
-        dfile_put_num (x, y++, scroll_x / GAME_W);
-        dfile_put_num (x, y++, scroll_y / GAME_H);
+        dfile_put_num (x,   y, scroll_x / GAME_W);
+        dfile_put_num (x+3, y, scroll_y / GAME_H);
+
+        y++;
+        y++;
+
+        /* AMMO UNDERNEATH */
+        char ammo_text[] = { ZX81_INV(CH_A), ZX81_INV(CH_M), ZX81_INV(CH_M), ZX81_INV(CH_O) };
+
+        dfile_put_zdata(x, y++, ammo_text, ZSTR_LEN(ammo_text)+1);
+        dfile_put_num (x, y++, 6);  /* ammo value */
+
 
         //
         //  enemies: erase, move, draw

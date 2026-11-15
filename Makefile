@@ -5,7 +5,7 @@ export PATH    := $(Z88DK)/bin:$(PATH)
 export ZCCCFG  := $(Z88DK)/lib/config/
 
 TARGET    = gr
-SRC       = src/main.c src/lib/core/dfile.c src/lib/gfx/sprite.c src/world.c src/lib/math/rng.c src/shape_player.c src/shape_enemy.c
+SRC       = src/main.c src/lib/core/dfile.c src/lib/gfx/sprite.c src/world.c src/lib/math/rng.c src/shape_player.c src/shape_enemy.c src/shape_boon.c src/boon_map.c src/boon.c
 INCLUDES  = -Isrc -Isrc/lib/core -Isrc/lib/gfx -Isrc/lib/math -Isrc/lib/input
 BUILD     = build
 WORLD_H   = src/world_bg.h

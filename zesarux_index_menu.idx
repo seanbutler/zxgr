@@ -68,7 +68,6 @@ ESC Close
 
 Main Menu-> Windows
 Process switcher
-Trash Can
 Cascade all windows
 Rearrange all windows
 Reduce all windows
@@ -192,5 +191,21 @@ Main Menu-> Storage-> Tape
     Visual Real Tape
     Visual Casette Tape
     Convert Audio to ZX81
+ESC Close
+
+Main Menu-> Settings-> Main Window
+[ ] Full Screen
+[ ] Border enabled
+[ ] Auto Frameskip
+    Window Size Zoom [2]
+[X] Autochange Zoom big display
+ESC Close
+
+Main Menu-> Settings Menu-> General Settings
+    Language [Default]
+    Online Download Path []
+[X] Search index enabled
+    Emulator Speed [100%]
+    ZEsarUX logo [Normal]
 ESC Close
 
