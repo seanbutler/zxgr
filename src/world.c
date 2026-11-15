@@ -1,19 +1,15 @@
 #include "world_api.h"
-
-#define SCREEN_W  32
-#define SCREEN_H  24
-
 #include "dfile.h"
 
-static char bg_scene[SCREEN_H * SCREEN_W];
+static char bg_scene[GAME_H * GAME_W];
 
 void world_cache_bg(void)
 {
     int x, y;
-    for (y = 0; y < SCREEN_H; y++) {
+    for (y = 0; y < GAME_H; y++) {
         const char *src = dfile + y * DFILE_STRIDE;
-        char *dst = bg_scene + y * SCREEN_W;
-        for (x = 0; x < SCREEN_W; x++)
+        char *dst = bg_scene + y * GAME_W;
+        for (x = 0; x < GAME_W; x++)
             dst[x] = src[x];
     }
 }
@@ -31,11 +27,11 @@ static void blit_tile(const World *w, int ti, int screen_x, int screen_y)
 
     for (r = 0; r < w->tile_h; r++) {
         sy = screen_y + r;
-        if (sy >= 0 && sy < SCREEN_H) {
+        if (sy >= 0 && sy < GAME_H) {
             char *dst = dfile + sy * DFILE_STRIDE + screen_x;
             for (c = 0; c < w->tile_w; c++) {
                 int sx = screen_x + c;
-                if (sx >= 0 && sx < SCREEN_W)
+                if (sx >= 0 && sx < GAME_W)
                     dst[c] = src[c];
             }
         }
@@ -51,9 +47,8 @@ void world_draw(const World *w, int scroll_x, int scroll_y)
     /* clear screen to background (white/space) */
     {
         int r, c;
-        for (r = 0; r < SCREEN_H; r++)
-            for (c = 0; c < SCREEN_W; c++)
-                // put_char(c, r, 0x80);
+        for (r = 0; r < GAME_H; r++)
+            for (c = 0; c < GAME_W; c++)
                 dfile_put_char(c, r, 0x00);
     }
 
@@ -67,8 +62,8 @@ void world_draw(const World *w, int scroll_x, int scroll_y)
         sx = tx * (int)w->tile_w - scroll_x;
         sy = ty * (int)w->tile_h - scroll_y;
 
-        if (sx + (int)w->tile_w <= 0 || sx >= SCREEN_W) continue;
-        if (sy + (int)w->tile_h <= 0 || sy >= SCREEN_H) continue;
+        if (sx + (int)w->tile_w <= 0 || sx >= GAME_W) continue;
+        if (sy + (int)w->tile_h <= 0 || sy >= GAME_H) continue;
 
         blit_tile(w, ti, sx, sy);
     }

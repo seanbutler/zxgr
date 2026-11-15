@@ -5,7 +5,7 @@ export PATH    := $(Z88DK)/bin:$(PATH)
 export ZCCCFG  := $(Z88DK)/lib/config/
 
 TARGET    = gr
-SRC       = src/main.c src/lib/core/dfile.c src/lib/gfx/sprite.c src/world.c src/lib/math/rng.c
+SRC       = src/main.c src/lib/core/dfile.c src/lib/gfx/sprite.c src/world.c src/lib/math/rng.c src/shape_player.c src/shape_enemy.c
 INCLUDES  = -Isrc -Isrc/lib/core -Isrc/lib/gfx -Isrc/lib/math -Isrc/lib/input
 BUILD     = build
 WORLD_H   = src/world_bg.h
@@ -16,7 +16,7 @@ WORLD_PNG = assets/world.png
 all: $(BUILD)/$(TARGET).P
 
 $(BUILD)/$(TARGET).P: $(SRC) $(WORLD_H) | $(BUILD)
-	zcc +zx81 -O2 $(INCLUDES) -create-app -o $(BUILD)/$(TARGET) $(SRC)
+	zcc +zx81 -O2 --opt-code-speed $(INCLUDES) -create-app -o $(BUILD)/$(TARGET) $(SRC)
 
 $(WORLD_H): $(WORLD_PNG)
 	python3 tools/png2zx81.py $(WORLD_PNG) $(WORLD_H) world_bg

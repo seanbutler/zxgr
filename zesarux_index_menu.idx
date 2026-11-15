@@ -96,3 +96,101 @@ Move to Trash
 Empty Trash
 ESC Close
 
+Main Menu-> Help
+About
+Help
+Background Windows Help
+Keyboard Help
+Readme
+Features
+Exclusive features
+History
+Acknowledgements
+Donors
+Donate
+FAQ
+Changelog
+Alternate ROMS
+Included tapes
+Install
+Install on Windows
+Compile info
+Statistics
+Core Statistics
+Running info
+Licenses
+In Memoriam
+ESC Close
+
+Settings Menu-> General Settings
+    Language [Default]
+    Online Download Path []
+[X] Search index enabled
+    Emulator Speed [100%]
+    ZEsarUX logo [Normal]
+ESC Close
+
+Main Menu-> Debug
+Reset
+Generate NMI
+Debug CPU
+Machine Info
+Hexadecimal Editor
+View Sprites
+Visual memory
+Load binary block
+Save binary block
+Ascii Table
+Basic
+Find
+Poke
+ESC Close
+
+Main Menu-> Storage
+Tape
+ZXpand emulation
+ESC Close
+
+Main Menu-> Machine
+--- Select manufacturer ---
+Amstrad
+Ascii Corp
+Cambridge Computers
+Chloe Corporation
+Coleco Industries
+Czerweny Electronica
+Investronica
+Jupiter Cantab
+Mario Prato
+Microdigital Eletronica
+Miles Gordon Technology
+NedoPC
+New Horizons
+Next Team
+Pentagon
+Science of Cambridge
+Sega
+Sinclair Research
+Spectravideo Intl
+Timex Computer
+Timex Sinclair
+TS Labs
+ZXUno Team
+ESC Close
+
+Main Menu-> Storage-> Tape
+--- Standard Tape ---
+    Input [build/gr.P]
+[X] Input tape inserted
+    Output []
+[ ] Output tape inserted
+--- Input Real Tape ---
+    File []
+[ ] Inserted
+[ ] Playing
+    Tape Viewer
+    Visual Real Tape
+    Visual Casette Tape
+    Convert Audio to ZX81
+ESC Close
+

@@ -1,17 +1,6 @@
 #include "sprite.h"
-
 #include "dfile.h"
-
-const char shape_enemy[] = {
-    CH_INV_TR, CH_INV_TL,
-    CH_INV_BL, CH_INV_BR,
-};
-
-const char shape_player[] = {
-    CH_SPACE, CH_GREY,  CH_GREY,  CH_SPACE,
-    CH_FULL,  CH_FULL,  CH_FULL,  CH_FULL,
-    CH_GREY,  CH_SPACE, CH_SPACE, CH_GREY,
-};
+#include "world_api.h"
 
 void sprite_init(Sprite *s, int x, int y, int w, int h, int dx, int dy, const char *data)
 {
@@ -46,11 +35,11 @@ void sprite_erase(const Sprite *s, const char *bg)
     int r, c;
     for (r = 0; r < s->h; r++) {
         int sy = s->y + r;
-        if (sy >= SCREEN_H) continue;
+        if (sy >= GAME_H) continue;
         for (c = 0; c < s->w; c++) {
             int sx = s->x + c;
-            if (sx < SCREEN_W)
-                dfile_put_char(sx, sy, bg[sy * SCREEN_W + sx]);
+            if (sx < GAME_W)
+                dfile_put_char(sx, sy, bg[sy * GAME_W + sx]);
         }
     }
 }

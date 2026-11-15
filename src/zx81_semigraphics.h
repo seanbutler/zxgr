@@ -56,6 +56,64 @@
 #define CH_QTR_BR   0x87   /* bottom-right quadrant (inverse 3QTR)          */
 #define CH_GREY_INV 0x88   /* inverse checkerboard ·█·█  (same grey on TV)  */
 
+/* ---- Text / punctuation characters ------------------------------------ */
+#define CH_QUOTE    0x0B   /* "                                              */
+#define CH_POUND    0x0C   /* £                                              */
+#define CH_DOLLAR   0x0D   /* $                                              */
+#define CH_COLON    0x0E   /* :                                              */
+#define CH_QUERY    0x0F   /* ?                                              */
+#define CH_LPAREN   0x10   /* (                                              */
+#define CH_RPAREN   0x11   /* )                                              */
+#define CH_GT       0x12   /* >                                              */
+#define CH_LT       0x13   /* <                                              */
+#define CH_EQUALS   0x14   /* =                                              */
+#define CH_PLUS     0x15   /* +                                              */
+#define CH_MINUS    0x16   /* -                                              */
+#define CH_STAR     0x17   /* *                                              */
+#define CH_SLASH    0x18   /* /                                              */
+#define CH_SEMI     0x19   /* ;                                              */
+#define CH_COMMA    0x1A   /* ,                                              */
+#define CH_PERIOD   0x1B   /* .                                              */
+/* digits 0-9: 0x1C-0x25, letters A-Z: 0x26-0x3F                           */
+#define CH_0        0x1C
+#define CH_1        0x1D
+#define CH_2        0x1E
+#define CH_3        0x1F
+#define CH_4        0x20
+#define CH_5        0x21
+#define CH_6        0x22
+#define CH_7        0x23
+#define CH_8        0x24
+#define CH_9        0x25
+
+#define CH_A        0x26
+#define CH_B        0x27
+#define CH_C        0x28
+#define CH_D        0x29
+#define CH_E        0x2A
+#define CH_F        0x2B
+#define CH_G        0x2C
+#define CH_H        0x2D
+#define CH_I        0x2E
+#define CH_J        0x2F
+#define CH_K        0x30
+#define CH_L        0x31
+#define CH_M        0x32
+#define CH_N        0x33
+#define CH_O        0x34
+#define CH_P        0x35
+#define CH_Q        0x36
+#define CH_R        0x37
+#define CH_S        0x38
+#define CH_T        0x39
+#define CH_U        0x3A
+#define CH_V        0x3B
+#define CH_W        0x3C
+#define CH_X        0x3D
+#define CH_Y        0x3E
+#define CH_Z        0x3F
+#define CH_INV_QUOTE  0x8B   /* inverse "                                    */
+
 /* Utility macro */
 #define ZX81_INV(c) ((c) ^ 0x80)
 

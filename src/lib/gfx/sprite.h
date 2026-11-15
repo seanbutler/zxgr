@@ -13,12 +13,11 @@ typedef struct {
     const char *data;
 } Sprite;
 
-extern const char shape_enemy[];
-extern const char shape_player[];
-
 void sprite_init(Sprite *s, int x, int y, int w, int h, int dx, int dy, const char *data);
 void sprite_move(Sprite *s);
 void sprite_draw(const Sprite *s);
 void sprite_erase(const Sprite *s, const char *bg);
+
+#define sprite_is_moving(s) ((s)->dx != 0 || (s)->dy != 0)
 
 #endif
