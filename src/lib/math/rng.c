@@ -9,7 +9,7 @@ void rng_seed(unsigned char seed)
 }
 
 /* 8-bit xorshift (Marsaglia triple 7,5,3) — period 255, branch-free */
-int rng_next(void)
+unsigned char rng_next(void)
 {
     rng_state ^= rng_state << 7;
     rng_state ^= rng_state >> 5;

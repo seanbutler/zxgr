@@ -4,7 +4,10 @@
 #define SCREEN_W  32
 #define SCREEN_H  24
 
+#include <stdint.h>
 #include "zx81_semigraphics.h"
+
+/* There is a compiler issue here: 16 bit copies elsewhere mean these cant be uint8_t */
 
 typedef struct {
     int x, y;

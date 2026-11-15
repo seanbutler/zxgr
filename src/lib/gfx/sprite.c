@@ -21,7 +21,7 @@ void sprite_move(Sprite *s)
 
 void sprite_draw(const Sprite *s)
 {
-    int r, c;
+    uint8_t r, c;
     for (r = 0; r < s->h; r++) {
         char *dst = dfile + (s->y + r) * DFILE_STRIDE + s->x;
         const char *src = s->data + r * s->w;
@@ -32,13 +32,14 @@ void sprite_draw(const Sprite *s)
 
 void sprite_erase(const Sprite *s, const char *bg)
 {
-    int r, c;
+    uint8_t r, c;
+    int sy, sx;
     for (r = 0; r < s->h; r++) {
-        int sy = s->y + r;
-        if (sy >= GAME_H) continue;
+        sy = s->y + r;
+        if (sy < 0 || sy >= GAME_H) continue;
         for (c = 0; c < s->w; c++) {
-            int sx = s->x + c;
-            if (sx < GAME_W)
+            sx = s->x + c;
+            if (sx >= 0 && sx < GAME_W)
                 dfile_put_char(sx, sy, bg[sy * GAME_W + sx]);
         }
     }

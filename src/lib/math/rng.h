@@ -1,7 +1,9 @@
 #ifndef RNG_H
 #define RNG_H
 
+// #include <stdint.h>
+
 void rng_seed(unsigned char seed);
-int  rng_next(void);
+unsigned char rng_next(void);
 
 #endif

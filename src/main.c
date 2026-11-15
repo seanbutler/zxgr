@@ -14,6 +14,8 @@
 
 #pragma string name GrDemo
 
+#include <stdint.h>
+
 #include <zx81.h>
 #include "dfile.h"
 #include "zx81_semigraphics.h"
@@ -44,7 +46,7 @@ main()
 
     Sprite player;
     Sprite enemies[MAX_NUM_ENEMIES];
-    int i;
+    uint8_t i;
 
     sprite_init(&player, player_wx - scroll_x, player_wy - scroll_y, SHAPE_PLAYER_W, SHAPE_PLAYER_H , 0, 0, shape_player);
 
@@ -61,21 +63,34 @@ main()
     dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
     world_cache_bg();
+    sprite_draw(&player);
+
+
+    int frame_counter= 0;
+
 
     while (1)
     {
+        frame_counter++;
 
         wait_frame();
 
-        /* HUD: screen coords top-right  "X:nn Y:nn" at cols 24-31 */
-        int x=25;
+        /* HUD: screen coords top-right */
+        int x=24;
         int y=0;
-        dfile_put_char(x++, y, ZX81_INV(CH_M));           /* M */
-        dfile_put_char(x++, y, ZX81_INV(CH_A));           /* A */
-        dfile_put_char(x++, y, ZX81_INV(CH_P));           /* P */
 
-        x=25;
-        y=1;
+        /* HEALTH UNDERNEATH */
+
+        char health_text[] = {
+            ZX81_INV(CH_H), ZX81_INV(CH_E), ZX81_INV(CH_A), ZX81_INV(CH_L), ZX81_INV(CH_T), ZX81_INV(CH_H)
+        };
+
+        /* MAP UNDERNEATH */
+        char map_text[] = { ZX81_INV(CH_M), ZX81_INV(CH_A), ZX81_INV(CH_P) };
+
+        dfile_put_zdata(x, y++, health_text, ZSTR_LEN(health_text));
+        dfile_put_zdata(x, y++, map_text, ZSTR_LEN(map_text));
+
         dfile_put_num (x, y++, scroll_x / GAME_W);
         dfile_put_num (x, y++, scroll_y / GAME_H);
 
@@ -83,25 +98,31 @@ main()
         //  enemies: erase, move, draw
         //
 
-        for (i = 0; i < MAX_NUM_ENEMIES; i++) {
-            if (sprite_is_moving(&enemies[i])) {    
-                sprite_erase(&enemies[i], world_bg_scene());
-                sprite_move(&enemies[i]);
-                if (enemies[i].x > GAME_W - enemies[i].w) { enemies[i].x = GAME_W - enemies[i].w; enemies[i].dx = -1; }
-                else if (enemies[i].x < 0)                 { enemies[i].x = 0;                       enemies[i].dx =  1; }
-                if (enemies[i].y > GAME_H - enemies[i].h) { enemies[i].y = GAME_H - enemies[i].h;   enemies[i].dy = -1; }
-                else if (enemies[i].y < 0)                 { enemies[i].y = 0;                        enemies[i].dy =  1; }
-                sprite_draw(&enemies[i]);
+        if (frame_counter & 1) 
+            {
+            for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+                if (sprite_is_moving(&enemies[i])) {    
+                    sprite_erase(&enemies[i], world_bg_scene());                
+                    sprite_move(&enemies[i]);
+                    
+                    if (enemies[i].x > GAME_W - enemies[i].w) { enemies[i].x = GAME_W - enemies[i].w; enemies[i].dx = -1; }
+                    else if (enemies[i].x < 0)                 { enemies[i].x = 0;                       enemies[i].dx =  1; }
+                    
+                    if (enemies[i].y > GAME_H - enemies[i].h) { enemies[i].y = GAME_H - enemies[i].h;   enemies[i].dy = -1; }
+                    else if (enemies[i].y < 0)                 { enemies[i].y = 0;                        enemies[i].dy =  1; }
+
+                    sprite_draw(&enemies[i]);
+                }
             }
         }
 
-        player.dx = 0;
-        player.dy = 0;
-        if      ((key_pressed(KEY_UP)    || key_pressed(KEY_ALT_UP))    && player_wy > 0)                          player.dy = -1;
-        else if ((key_pressed(KEY_DOWN)  || key_pressed(KEY_ALT_DOWN))  && player_wy < WORLD_BG_WORLD_H - player.h)  player.dy =  1;
-        if      ((key_pressed(KEY_LEFT)  || key_pressed(KEY_ALT_LEFT))  && player_wx > 0)                          player.dx = -1;
-        else if ((key_pressed(KEY_RIGHT) || key_pressed(KEY_ALT_RIGHT)) && player_wx < WORLD_BG_WORLD_W - player.w)  player.dx =  1;
-        if (sprite_is_moving(&player)) {
+        player.dx = (key_pressed(KEY_RIGHT) && player_wx < WORLD_BG_WORLD_W - player.w) - (key_pressed(KEY_LEFT)  && player_wx > 0);
+
+        player.dy = (key_pressed(KEY_DOWN) && player_wy < WORLD_BG_WORLD_H - player.h) - (key_pressed(KEY_UP)    && player_wy > 0);
+
+
+        if (sprite_is_moving(&player)) 
+        {
             sprite_erase(&player, world_bg_scene());
             player_wx += player.dx;
             player_wy += player.dy;
@@ -122,6 +143,7 @@ main()
                     player_wx  = scroll_x;
                     flipped = 1;
                 }
+
                 if (player.y < 0 && scroll_y >= GAME_H) {
                     scroll_y -= GAME_H;
                     player.y   = GAME_H - player.h;
@@ -133,6 +155,7 @@ main()
                     player_wy  = scroll_y;
                     flipped = 1;
                 }
+
                 if (flipped) {
                     world_draw(&world_bg, scroll_x, scroll_y);
                     world_cache_bg();
