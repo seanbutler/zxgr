@@ -46,18 +46,20 @@ main()
 
     Sprite player;
     Sprite enemies[MAX_NUM_ENEMIES];
+    int enemy_anim[MAX_NUM_ENEMIES];
     uint8_t i;
 
     sprite_init(&player, player_wx - scroll_x, player_wy - scroll_y, SHAPE_PLAYER_W, SHAPE_PLAYER_H , 0, 0, shape_player);
 
     for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+        enemy_anim[i] = 0;
         sprite_init(&enemies[i],
             rng_next() % (GAME_W - SHAPE_ENEMY_W),
             rng_next() % (GAME_H - SHAPE_ENEMY_H),
             SHAPE_ENEMY_W, SHAPE_ENEMY_H,
             (rng_next() & 1) ? 1 : -1,
             (rng_next() & 1) ? 1 : -1,
-            shape_enemy);
+            shape_enemy_frames[0]);
     }
 
     dfile_init();
@@ -98,21 +100,47 @@ main()
         //  enemies: erase, move, draw
         //
 
-        if (frame_counter & 1) 
-            {
-            for (i = 0; i < MAX_NUM_ENEMIES; i++) {
-                if (sprite_is_moving(&enemies[i])) {    
-                    sprite_erase(&enemies[i], world_bg_scene());                
-                    sprite_move(&enemies[i]);
-                    
-                    if (enemies[i].x > GAME_W - enemies[i].w) { enemies[i].x = GAME_W - enemies[i].w; enemies[i].dx = -1; }
-                    else if (enemies[i].x < 0)                 { enemies[i].x = 0;                       enemies[i].dx =  1; }
-                    
-                    if (enemies[i].y > GAME_H - enemies[i].h) { enemies[i].y = GAME_H - enemies[i].h;   enemies[i].dy = -1; }
-                    else if (enemies[i].y < 0)                 { enemies[i].y = 0;                        enemies[i].dy =  1; }
+        {
+            int ei = frame_counter % MAX_NUM_ENEMIES;
+            Sprite *e = &enemies[ei];
+            if (sprite_is_moving(e)) {
+                const char *bg = world_bg_scene();
+                int nx, ny, cx, cy, r, c;
+                sprite_erase(e, bg);
 
-                    sprite_draw(&enemies[i]);
+                nx = e->x + e->dx;
+                ny = e->y + e->dy;
+
+                if (nx < 0 || nx + e->w > GAME_W) {
+                    e->dx = -e->dx;
+                } else {
+                    cx = (e->dx > 0) ? nx + e->w - 1 : nx;
+                    for (r = 0; r < e->h; r++) {
+                        int sy = e->y + r;
+                        if (sy >= 0 && sy < GAME_H && bg[sy * GAME_W + cx]) {
+                            e->dx = -e->dx;
+                            break;
+                        }
+                    }
                 }
+
+                if (ny < 0 || ny + e->h > GAME_H) {
+                    e->dy = -e->dy;
+                } else {
+                    cy = (e->dy > 0) ? ny + e->h - 1 : ny;
+                    for (c = 0; c < e->w; c++) {
+                        int sx = e->x + c;
+                        if (sx >= 0 && sx < GAME_W && bg[cy * GAME_W + sx]) {
+                            e->dy = -e->dy;
+                            break;
+                        }
+                    }
+                }
+
+                sprite_move(e);
+                enemy_anim[ei]++;
+                e->data = shape_enemy_frames[enemy_anim[ei] & 1];
+                sprite_draw(e);
             }
         }
 
@@ -157,10 +185,28 @@ main()
                 }
 
                 if (flipped) {
+                    int r, c, tries, ok, ex, ey;
+                    const char *bg;
                     world_draw(&world_bg, scroll_x, scroll_y);
                     world_cache_bg();
-                    for (i = 0; i < MAX_NUM_ENEMIES; i++)
-                        sprite_draw(&enemies[i]);
+                    bg = world_bg_scene();
+                    for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+                        Sprite *e = &enemies[i];
+                        ok = 0;
+                        for (tries = 0; tries < 64 && !ok; tries++) {
+                            ex = rng_next() % (GAME_W - e->w);
+                            ey = rng_next() % (GAME_H - e->h);
+                            ok = 1;
+                            for (r = 0; r < e->h && ok; r++)
+                                for (c = 0; c < e->w && ok; c++)
+                                    if (bg[(ey + r) * GAME_W + (ex + c)])
+                                        ok = 0;
+                        }
+                        if (ok) {
+                            e->x = ex;
+                            e->y = ey;
+                        }
+                    }
                 }
             }
 
