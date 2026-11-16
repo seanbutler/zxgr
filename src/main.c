@@ -19,6 +19,7 @@
 #include <zx81.h>
 #include "dfile.h"
 #include "zx81_semigraphics.h"
+#include "keyboard.h"
 #include "sprite.h"
 #include "world_api.h"
 #include "shape_player.h"
@@ -26,6 +27,8 @@
 #include "world_bg.h"
 #include "rng.h"
 #include "boon.h"
+#include "enemy_map.h"
+#include "title_screen.h"
 
 #include "keyboard.h"
 
@@ -44,36 +47,39 @@ main()
     // SPLASH SCREEN HERE
     //
     
-    itn counter = 0xFF;
-    while(counter > 0) 
-    { 
-        counter--; 
-    
-    
-    
-    
+    int x = 12;
+    int y = 0;
+
+    dfile_init();
+    title_screen_draw();
+
+    char instr_text[] = {
+        ZX81_INV(CH_Z), ZX81_INV(CH_X), ZX81_INV(CH_PLUS), ZX81_INV(CH_K), ZX81_INV(CH_M), 
+        ZX81_INV(CH_SPACE), ZX81_INV(CH_2), ZX81_INV(CH_SPACE),  
+        ZX81_INV(CH_M), ZX81_INV(CH_O), ZX81_INV(CH_V), ZX81_INV(CH_E)
+    };
+
+    char go_text[] = {
+        ZX81_INV(CH_P), ZX81_INV(CH_R), ZX81_INV(CH_E), ZX81_INV(CH_S), ZX81_INV(CH_S), ZX81_INV(CH_SPACE), ZX81_INV(CH_L),
+        ZX81_INV(CH_SPACE), ZX81_INV(CH_T), ZX81_INV(CH_O), ZX81_INV(CH_SPACE), ZX81_INV(CH_S), ZX81_INV(CH_T), ZX81_INV(CH_A), ZX81_INV(CH_R), ZX81_INV(CH_T)
+    };
+
+    dfile_put_zdata((32 - ZSTR_LEN(instr_text))/2, 0, instr_text, ZSTR_LEN(instr_text)+1);
+    dfile_put_zdata((32 - ZSTR_LEN(go_text))/2, 23, go_text, ZSTR_LEN(go_text)+1);
+
+    int go_time = 0;
+    while(! go_time)
+    {
+        wait_frame();
+        go_time = (key_pressed(KEY_L) );
     }
 
 
+    dfile_clear(CH_SPACE);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//
-// GAMEPLAY HERE
-//
+    //
+    // GAMEPLAY HERE
+    //
 
     int scroll_x = 0;
     int scroll_y = 0;
@@ -88,16 +94,7 @@ main()
 
     sprite_init(&player, player_wx - scroll_x, player_wy - scroll_y, SHAPE_PLAYER_W, SHAPE_PLAYER_H , 0, 0, shape_player);
 
-    for (i = 0; i < MAX_NUM_ENEMIES; i++) {
-        enemy_anim[i] = 0;
-        sprite_init(&enemies[i],
-            rng_next() % (GAME_W - SHAPE_ENEMY_W),
-            rng_next() % (GAME_H - SHAPE_ENEMY_H),
-            SHAPE_ENEMY_W, SHAPE_ENEMY_H,
-            (rng_next() & 1) ? 1 : -1,
-            (rng_next() & 1) ? 1 : -1,
-            shape_enemy_frames[0]);
-    }
+    enemies_load_screen(enemies, enemy_anim, MAX_NUM_ENEMIES, scroll_x, scroll_y);
 
     dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
@@ -269,28 +266,10 @@ main()
                 }
 
                 if (flipped) {
-                    int r, c, tries, ok, ex, ey;
-                    const char *bg;
                     world_draw(&world_bg, scroll_x, scroll_y);
+                    boon_draw_all(scroll_x, scroll_y);
                     world_cache_bg();
-                    bg = world_bg_scene();
-                    for (i = 0; i < MAX_NUM_ENEMIES; i++) {
-                        Sprite *e = &enemies[i];
-                        ok = 0;
-                        for (tries = 0; tries < 64 && !ok; tries++) {
-                            ex = rng_next() % (GAME_W - e->w);
-                            ey = rng_next() % (GAME_H - e->h);
-                            ok = 1;
-                            for (r = 0; r < e->h && ok; r++)
-                                for (c = 0; c < e->w && ok; c++)
-                                    if (bg[(ey + r) * GAME_W + (ex + c)])
-                                        ok = 0;
-                        }
-                        if (ok) {
-                            e->x = ex;
-                            e->y = ey;
-                        }
-                    }
+                    enemies_load_screen(enemies, enemy_anim, MAX_NUM_ENEMIES, scroll_x, scroll_y);
                 }
             }
 

@@ -65,3 +65,10 @@ void dfile_put_zdata(int x, int y, const char *s, int len)
 {
     memcpy(dfile + y * DFILE_STRIDE + x, s, len);
 }
+
+void dfile_clear(char c)
+{
+    int r;
+    for (r = 0; r < 24; r++)
+        memset(dfile + r * DFILE_STRIDE, c, 32);
+}
