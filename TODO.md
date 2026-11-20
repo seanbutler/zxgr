@@ -56,3 +56,6 @@
 ## Reviews
 - [ ] Efficiency / optimisation review — Z80 hot paths, unnecessary work per frame, ROM/RAM usage
 - [ ] Bad code smells & architecture review — coupling, naming, responsibilities, anything that will bite later
+- [ ] Profile tile map rendering and enemy update loop — verify sparse map scan and per-frame enemy work is not burning cycles; revisit if frame rate suffers
+- [ ] Player vs enemy collision detection — currently absent; when added, ensure it is cheap (AABB on small sprite counts, not per-char scan)
+- [ ] Player vs boon collision detection — same concern; boon_map scan every frame could be O(n) over all boons in the world, should be bounded to current screen only

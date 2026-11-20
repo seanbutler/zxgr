@@ -14,7 +14,7 @@ const char shape_boon_compass[] = {
 };
 
 const char shape_boon_ammo[] = {
-    CH_HALF_L,   CH_HALF_L,  CH_HALF_L,
-    CH_HALF_L,  CH_HALF_L,    CH_HALF_L,
-    ZX81_INV(CH_QTR_TR),   ZX81_INV(CH_QTR_TR),  ZX81_INV(CH_QTR_TR),
+    CH_DIAG_B,   CH_SPACE,  CH_DIAG_A,
+    CH_SPACE,  CH_FULL,    CH_SPACE,
+    CH_SPACE,   CH_FULL,  CH_SPACE,
 };

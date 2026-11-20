@@ -29,6 +29,7 @@
 #include "boon.h"
 #include "enemy_map.h"
 #include "title_screen.h"
+#include "player_state.h"
 
 #include "keyboard.h"
 
@@ -39,6 +40,7 @@
 /* ------------------------------------------------------------------ */
 
 #define MAX_NUM_ENEMIES 4
+#define MAX_NUM_BOONS   4
 
 main()
 {
@@ -90,16 +92,22 @@ main()
     Sprite player;
     Sprite enemies[MAX_NUM_ENEMIES];
     int enemy_anim[MAX_NUM_ENEMIES];
+    Sprite boons[MAX_NUM_BOONS];
     uint8_t i;
 
     sprite_init(&player, player_wx - scroll_x, player_wy - scroll_y, SHAPE_PLAYER_W, SHAPE_PLAYER_H , 0, 0, shape_player);
 
     enemies_load_screen(enemies, enemy_anim, MAX_NUM_ENEMIES, scroll_x, scroll_y);
+    boons_load_screen(boons, MAX_NUM_BOONS, scroll_x, scroll_y);
 
     dfile_init();
     world_draw(&world_bg, scroll_x, scroll_y);
-    boon_draw_all(scroll_x, scroll_y);
     world_cache_bg();
+    for (i = 0; i < MAX_NUM_BOONS; i++) {
+        if (boons[i].dx == 0 && boons[i].dy == 0 && boons[i].data) {
+            sprite_draw(&boons[i]);
+        }
+    }
     sprite_draw(&player);
 
 
@@ -124,7 +132,7 @@ main()
 
 
         dfile_put_zdata(x, y++, health_text, ZSTR_LEN(health_text)+1);
-        dfile_put_num (x, y++, 10);  /* health value */
+        dfile_put_num (x, y++, player_state.health);
 
         y++;
 
@@ -143,7 +151,7 @@ main()
         char ammo_text[] = { ZX81_INV(CH_A), ZX81_INV(CH_M), ZX81_INV(CH_M), ZX81_INV(CH_O) };
 
         dfile_put_zdata(x, y++, ammo_text, ZSTR_LEN(ammo_text)+1);
-        dfile_put_num (x, y++, 6);  /* ammo value */
+        dfile_put_num (x, y++, player_state.ammo);
 
 
         //
@@ -230,13 +238,15 @@ main()
             }
         }
 
-        if (sprite_is_moving(&player)) 
+        if (sprite_is_moving(&player))
         {
             sprite_erase(&player, world_bg_scene());
             player_wx += player.dx;
             player_wy += player.dy;
             player.x = player_wx - scroll_x;
             player.y = player_wy - scroll_y;
+
+            boon_check_collision(boons, player.x, player.y, player.w, player.h, scroll_x, scroll_y);
 
             /* page flip: player crossed a screen edge */
             {
@@ -267,13 +277,24 @@ main()
 
                 if (flipped) {
                     world_draw(&world_bg, scroll_x, scroll_y);
-                    boon_draw_all(scroll_x, scroll_y);
                     world_cache_bg();
+                    boons_load_screen(boons, MAX_NUM_BOONS, scroll_x, scroll_y);
+                    for (i = 0; i < MAX_NUM_BOONS; i++) {
+                        if (boons[i].data) {
+                            sprite_draw(&boons[i]);
+                        }
+                    }
                     enemies_load_screen(enemies, enemy_anim, MAX_NUM_ENEMIES, scroll_x, scroll_y);
                 }
             }
 
             sprite_draw(&player);
+        }
+
+        for (i = 0; i < MAX_NUM_BOONS; i++) {
+            if (boons[i].data) {
+                sprite_draw(&boons[i]);
+            }
         }
 
     }
