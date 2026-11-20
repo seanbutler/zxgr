@@ -41,6 +41,7 @@
 
 ## Technical
 - [ ] Verify all enemy_map and boon_map coordinates land in open cave areas
+- [ ] In png2zx81 asset conversion, fail generation if boon/enemy marker colors are placed inside wall tiles
 - [ ] RLE compress title/game_over screens if ROM gets tight (~420 B saving)
 - [ ] Experiment with world tile size parameters (try 3×3, 6×6, 8×8) to find compression sweet spot — measure unique tile count and total .h size; artist can also tweak the PNG to reduce unique tiles where the map is inefficient
 

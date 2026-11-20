@@ -1,19 +1,35 @@
 #include "enemy_map.h"
+
 #include "shape_enemy.h"
 #include "world_api.h"
 #include "rng.h"
 
+/* Generated from world.png -- do not edit */
 const EnemySpawn enemy_map[] = {
-    /*  screen (0,0) */
-    {  4,  4, ENEMY_BAT },
-    { 16,  8, ENEMY_BAT },
-    {  8, 16, ENEMY_BAT },
-    { 20, 20, ENEMY_BAT },
-    /*  screen (1,0) */
-    { 28,  6, ENEMY_BAT },
-    { 40, 14, ENEMY_BAT },
-    /*  sentinel */
-    {  0,  0, ENEMY_NONE },
+    {  41,  10, ENEMY_BAT },
+    {  83,  18, ENEMY_BAT },
+    {  66,  19, ENEMY_BAT },
+    {  20,  31, ENEMY_BAT },
+    {  31,  31, ENEMY_BAT },
+    {  83,  34, ENEMY_BAT },
+    {  88,  39, ENEMY_BAT },
+    {   8,  49, ENEMY_BAT },
+    {  44,  49, ENEMY_BAT },
+    {  33,  50, ENEMY_BAT },
+    {  71,  50, ENEMY_BAT },
+    {  15,  53, ENEMY_BAT },
+    {  66,  56, ENEMY_BAT },
+    { 113,  65, ENEMY_BAT },
+    { 105,  69, ENEMY_BAT },
+    {   9,  72, ENEMY_BAT },
+    {  50,  73, ENEMY_BAT },
+    {  22,  74, ENEMY_BAT },
+    {  35,  74, ENEMY_BAT },
+    {   8,  83, ENEMY_BAT },
+    {  21,  83, ENEMY_BAT },
+    {  92,  85, ENEMY_BAT },
+    { 105,  85, ENEMY_BAT },
+    {   0,   0, ENEMY_NONE },  /* sentinel */
 };
 
 void enemies_load_screen(Sprite *enemies, int *anim, int max, int scroll_x, int scroll_y)

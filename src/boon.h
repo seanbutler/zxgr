@@ -16,7 +16,7 @@ typedef struct {
 extern Boon boon_map[];
 
 void boon_draw_all(int scroll_x, int scroll_y);
-void boon_check_collision(Sprite *boons, int player_x, int player_y, int player_w, int player_h,
+void boon_check_collision(Sprite *boons, int max, int player_x, int player_y, int player_w, int player_h,
                            int scroll_x, int scroll_y);
 void boons_load_screen(Sprite *boons, int max, int scroll_x, int scroll_y);
 

@@ -27,6 +27,7 @@ Saves a 256x192 preview PNG alongside the .h file.
 
 Usage:
     python3 png2zx81.py <input.png> <output.h> [<varname>] [--width N] [--height N]
+                       [--boon-map path/to/boon_map.c] [--enemy-map path/to/enemy_map.c]
 """
 
 import sys
@@ -49,6 +50,13 @@ T_BLACK = 0.62   # >= grey, < black
 TILE_W  = 4    # chars per tile, horizontal
 TILE_H  = 4    # chars per tile, vertical
 DEFAULT = 0x00 # char code for the implicit background tile
+
+# Marker colours in source map PNG.
+# These are gameplay entities, not background tiles.
+AMMO_MARKER_COLORS = ((255, 0, 0),)
+ENEMY_MARKER_COLORS = ((255, 128, 0), (255, 165, 0))
+HEALTH_MARKER_COLORS = ((0, 255, 0),)
+MARKER_TOLERANCE = 48
 
 # ---------------------------------------------------------------------------
 # ZX81 character pixel patterns — 8x8 grid, True = black ink
@@ -110,12 +118,51 @@ def _pick_char(brightness):
     return 0x80
 
 
+def _is_close_rgb(rgb, target, tolerance):
+    return (abs(rgb[0] - target[0]) <= tolerance and
+            abs(rgb[1] - target[1]) <= tolerance and
+            abs(rgb[2] - target[2]) <= tolerance)
+
+
+def _marker_type(rgb):
+    for c in AMMO_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'BOON_AMMO'
+    for c in ENEMY_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'ENEMY_BAT'
+    for c in HEALTH_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'BOON_HEALTH'
+    return None
+
+
 def convert(input_path, world_w, world_h):
-    img = Image.open(input_path).convert('L')
-    img = img.resize((world_w, world_h), Image.LANCZOS)
-    px  = img.load()
-    return [[_pick_char(px[x, y] / 255.0) for x in range(world_w)]
-            for y in range(world_h)]
+    src = Image.open(input_path)
+    img_l = src.convert('L').resize((world_w, world_h), Image.LANCZOS)
+    img_c = src.convert('RGB').resize((world_w, world_h), Image.NEAREST)
+    px_l = img_l.load()
+    px_c = img_c.load()
+
+    boons = []
+    enemies = []
+    chars = []
+
+    for y in range(world_h):
+        row = []
+        for x in range(world_w):
+            marker = _marker_type(px_c[x, y])
+            if marker == 'BOON_AMMO' or marker == 'BOON_HEALTH':
+                boons.append((x, y, marker))
+                row.append(DEFAULT)
+            elif marker == 'ENEMY_BAT':
+                enemies.append((x, y, marker))
+                row.append(DEFAULT)
+            else:
+                row.append(_pick_char(px_l[x, y] / 255.0))
+        chars.append(row)
+
+    return chars, boons, enemies
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +235,57 @@ def save_tile_sheet(palette, output_path):
                         px[ox + gc, oy + gr] = 0 if grid[gr][gc] else 255
     img.save(output_path)
     print(f'Tiles    {output_path}  ({len(palette)} tiles, {tile_px_w}x{tile_px_h * len(palette)}px)')
+
+
+def write_boon_map(boons, output_path, input_path):
+    with open(output_path, 'w') as f:
+        f.write('#include "boon.h"\n\n')
+        f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
+        f.write('Boon boon_map[] = {\n')
+        for wx, wy, boon_type in boons:
+            f.write(f'    {{ {wx:3d}, {wy:3d}, {boon_type:12s} }},\n')
+        f.write('    {   0,   0, BOON_NONE     },  /* sentinel */\n')
+        f.write('};\n')
+    print(f'Boons    {output_path}  ({len(boons)} entries)')
+
+
+def write_enemy_map(enemies, output_path, input_path):
+    with open(output_path, 'w') as f:
+        f.write('#include "enemy_map.h"\n\n')
+        f.write('#include "shape_enemy.h"\n')
+        f.write('#include "world_api.h"\n')
+        f.write('#include "rng.h"\n\n')
+        f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
+        f.write('const EnemySpawn enemy_map[] = {\n')
+        for wx, wy, enemy_type in enemies:
+            f.write(f'    {{ {wx:3d}, {wy:3d}, {enemy_type:9s} }},\n')
+        f.write('    {   0,   0, ENEMY_NONE },  /* sentinel */\n')
+        f.write('};\n\n')
+        f.write('void enemies_load_screen(Sprite *enemies, int *anim, int max, int scroll_x, int scroll_y)\n')
+        f.write('{\n')
+        f.write('    const EnemySpawn *sp;\n')
+        f.write('    int count, i;\n\n')
+        f.write('    for (i = 0; i < max; i++) {\n')
+        f.write('        enemies[i].dx = 0;\n')
+        f.write('        enemies[i].dy = 0;\n')
+        f.write('    }\n\n')
+        f.write('    count = 0;\n')
+        f.write('    for (sp = enemy_map; sp->type != ENEMY_NONE && count < max; sp++) {\n')
+        f.write('        int sx = (int)sp->wx - scroll_x;\n')
+        f.write('        int sy = (int)sp->wy - scroll_y;\n')
+        f.write('        if (sx >= 0 && sx + SHAPE_ENEMY_W <= GAME_W &&\n')
+        f.write('            sy >= 0 && sy + SHAPE_ENEMY_H <= GAME_H) {\n')
+        f.write('            anim[count] = 0;\n')
+        f.write('            sprite_init(&enemies[count], sx, sy,\n')
+        f.write('                        SHAPE_ENEMY_W, SHAPE_ENEMY_H,\n')
+        f.write('                        (rng_next() & 1) ? 1 : -1,\n')
+        f.write('                        (rng_next() & 1) ? 1 : -1,\n')
+        f.write('                        shape_enemy_frames[0]);\n')
+        f.write('            count++;\n')
+        f.write('        }\n')
+        f.write('    }\n')
+        f.write('}\n')
+    print(f'Enemies  {output_path}  ({len(enemies)} entries)')
 
 
 # ---------------------------------------------------------------------------
@@ -267,16 +365,22 @@ def main():
     src_w, src_h = Image.open(input_path).size
     world_w = int(args[args.index('--width')  + 1]) if '--width'  in args else src_w
     world_h = int(args[args.index('--height') + 1]) if '--height' in args else src_h
+    boon_map_path = args[args.index('--boon-map') + 1] if '--boon-map' in args else None
+    enemy_map_path = args[args.index('--enemy-map') + 1] if '--enemy-map' in args else None
 
     base, _       = os.path.splitext(output_path)
     preview_path  = base + '_preview.png'
     tiles_path    = base + '_tiles.png'
 
-    chars = convert(input_path, world_w, world_h)
+    chars, boons, enemies = convert(input_path, world_w, world_h)
     save_preview(chars, preview_path, world_w, world_h)
     palette, world_map = extract_tiles(chars, world_w, world_h)
     save_tile_sheet(palette, tiles_path)
     write_header(palette, world_map, varname, output_path, input_path, world_w, world_h)
+    if boon_map_path:
+        write_boon_map(boons, boon_map_path, input_path)
+    if enemy_map_path:
+        write_enemy_map(enemies, enemy_map_path, input_path)
 
 
 if __name__ == '__main__':

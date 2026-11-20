@@ -29,6 +29,7 @@
 #include "boon.h"
 #include "enemy_map.h"
 #include "title_screen.h"
+#include "game_over.h"
 #include "player_state.h"
 
 #include "keyboard.h"
@@ -45,6 +46,11 @@
 main()
 {
 
+
+    
+    while (1)
+    {
+
     //
     // SPLASH SCREEN HERE
     //
@@ -52,8 +58,14 @@ main()
     int x = 12;
     int y = 0;
 
+
+
     dfile_init();
+    
+    dfile_clear(CH_FULL);
+
     title_screen_draw();
+
 
     char instr_text[] = {
         ZX81_INV(CH_Z), ZX81_INV(CH_X), ZX81_INV(CH_PLUS), ZX81_INV(CH_K), ZX81_INV(CH_M), 
@@ -77,11 +89,15 @@ main()
     }
 
 
-    dfile_clear(CH_SPACE);
+    dfile_clear(CH_GREY);
 
     //
     // GAMEPLAY HERE
     //
+
+    player_state.health = 3;
+    player_state.ammo = 6;
+    player_state.has_compass = 0;
 
     int scroll_x = 0;
     int scroll_y = 0;
@@ -112,11 +128,14 @@ main()
 
 
     int frame_counter= 0;
+    int hurt_cooldown = 0;
+    int restart_requested = 0;
 
 
     while (1)
     {
         frame_counter++;
+        if (hurt_cooldown > 0) hurt_cooldown--;
 
         wait_frame();
 
@@ -136,7 +155,19 @@ main()
 
         y++;
 
-                /* MAP UNDERNEATH */
+
+        /* AMMO UNDERNEATH */
+        char ammo_text[] = { ZX81_INV(CH_A), ZX81_INV(CH_M), ZX81_INV(CH_M), ZX81_INV(CH_O) };
+
+        dfile_put_zdata(x, y++, ammo_text, ZSTR_LEN(ammo_text)+1);
+        dfile_put_num (x, y++, player_state.ammo);
+
+
+    y++;
+
+        y++;
+
+        /* MAP UNDERNEATH */
         char map_text[] = { ZX81_INV(CH_M), ZX81_INV(CH_A), ZX81_INV(CH_P) };
 
         dfile_put_zdata(x, y++, map_text, ZSTR_LEN(map_text)+1);
@@ -147,11 +178,6 @@ main()
         y++;
         y++;
 
-        /* AMMO UNDERNEATH */
-        char ammo_text[] = { ZX81_INV(CH_A), ZX81_INV(CH_M), ZX81_INV(CH_M), ZX81_INV(CH_O) };
-
-        dfile_put_zdata(x, y++, ammo_text, ZSTR_LEN(ammo_text)+1);
-        dfile_put_num (x, y++, player_state.ammo);
 
 
         //
@@ -203,7 +229,6 @@ main()
         }
 
         player.dx = (key_pressed(KEY_RIGHT) && player_wx < WORLD_BG_WORLD_W - player.w) - (key_pressed(KEY_LEFT)  && player_wx > 0);
-
         player.dy = (key_pressed(KEY_DOWN) && player_wy < WORLD_BG_WORLD_H - player.h) - (key_pressed(KEY_UP)    && player_wy > 0);
 
         /* environment collision — only test positions inside the current screen */
@@ -246,7 +271,7 @@ main()
             player.x = player_wx - scroll_x;
             player.y = player_wy - scroll_y;
 
-            boon_check_collision(boons, player.x, player.y, player.w, player.h, scroll_x, scroll_y);
+            boon_check_collision(boons, MAX_NUM_BOONS, player.x, player.y, player.w, player.h, scroll_x, scroll_y);
 
             /* page flip: player crossed a screen edge */
             {
@@ -291,11 +316,50 @@ main()
             sprite_draw(&player);
         }
 
+        if (hurt_cooldown == 0) {
+            for (i = 0; i < MAX_NUM_ENEMIES; i++) {
+                Sprite *e = &enemies[i];
+                if (!sprite_is_moving(e)) continue;
+
+                if (player.x < e->x + e->w && player.x + player.w > e->x &&
+                    player.y < e->y + e->h && player.y + player.h > e->y) {
+                    if (player_state.health > 0) player_state.health--;
+                    hurt_cooldown = 25;
+                    if (player_state.health <= 0) {
+                        char restart_text[] = {
+                            ZX81_INV(CH_P), ZX81_INV(CH_R), ZX81_INV(CH_E), ZX81_INV(CH_S), ZX81_INV(CH_S),
+                            ZX81_INV(CH_SPACE), ZX81_INV(CH_L)
+                        };
+
+                        dfile_init();
+                        game_over_draw();
+                        dfile_put_zdata((32 - ZSTR_LEN(restart_text))/2, 22, restart_text, ZSTR_LEN(restart_text)+1);
+
+                        while (1) {
+                            wait_frame();
+                            if (key_pressed(KEY_L)) {
+                                restart_requested = 1;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                    break;
+                }
+            }
+        }
+
+        if (restart_requested) {
+            break;
+        }
+
         for (i = 0; i < MAX_NUM_BOONS; i++) {
             if (boons[i].data) {
                 sprite_draw(&boons[i]);
             }
         }
+
+    }
 
     }
 }

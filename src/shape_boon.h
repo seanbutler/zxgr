@@ -7,5 +7,7 @@
 extern const char shape_boon_health[];
 extern const char shape_boon_ammo[];
 extern const char shape_boon_compass[];
+extern const char shape_boon_catapault[];
+
     
 #endif

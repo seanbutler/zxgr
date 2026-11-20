@@ -34,18 +34,28 @@ void boon_draw_all(int scroll_x, int scroll_y)
     }
 }
 
-void boon_check_collision(Sprite *boons, int player_x, int player_y, int player_w, int player_h,
+void boon_check_collision(Sprite *boons, int max, int player_x, int player_y, int player_w, int player_h,
                            int scroll_x, int scroll_y)
 {
     Boon *b;
     int i;
     for (b = boon_map; b->type != BOON_NONE; b++) {
-        if (b->type == BOON_NONE) continue;
-
         int sx = (int)b->wx - scroll_x;
         int sy = (int)b->wy - scroll_y;
         int boon_w = SHAPE_BOON_W;
         int boon_h = SHAPE_BOON_H;
+
+        i = -1;
+        {
+            int j;
+            for (j = 0; j < max; j++) {
+                if (boons[j].data && boons[j].x == sx && boons[j].y == sy) {
+                    i = j;
+                    break;
+                }
+            }
+        }
+        if (i < 0) continue;
 
         if (player_x < sx + boon_w && player_x + player_w > sx &&
             player_y < sy + boon_h && player_y + player_h > sy) {
@@ -62,16 +72,10 @@ void boon_check_collision(Sprite *boons, int player_x, int player_y, int player_
                     break;
             }
 
-            b->type = BOON_NONE;
-
-            for (i = 0; i < 4; i++) {
-                if (boons[i].x == sx && boons[i].y == sy) {
-                    sprite_erase(&boons[i], world_bg_scene());
-                    boons[i].dx = 0;
-                    boons[i].dy = 0;
-                    break;
-                }
-            }
+            sprite_erase(&boons[i], world_bg_scene());
+            boons[i].data = 0;
+            boons[i].dx = 0;
+            boons[i].dy = 0;
         }
     }
 }
@@ -84,12 +88,11 @@ void boons_load_screen(Sprite *boons, int max, int scroll_x, int scroll_y)
     for (i = 0; i < max; i++) {
         boons[i].dx = 0;
         boons[i].dy = 0;
+        boons[i].data = 0;
     }
 
     count = 0;
     for (b = boon_map; b->type != BOON_NONE && count < max; b++) {
-        if (b->type == BOON_NONE) continue;
-
         int sx = (int)b->wx - scroll_x;
         int sy = (int)b->wy - scroll_y;
         if (sx >= 0 && sx + SHAPE_BOON_W <= GAME_W &&

@@ -24,6 +24,7 @@ SCREEN_H = 24
 PIX_W    = SCREEN_W * 2   # 64
 PIX_H    = SCREEN_H * 2   # 48
 THRESHOLD = 128            # >= white, < black
+RLE_MARK = 0xFF
 
 # Index = TL | (TR<<1) | (BL<<2) | (BR<<3)
 QUAD_LOOKUP = [
@@ -47,6 +48,65 @@ def convert(input_path):
             br = 1 if px[cx*2+1, cy*2+1] < THRESHOLD else 0
             chars.append(QUAD_LOOKUP[tl | (tr<<1) | (bl<<2) | (br<<3)])
     return chars
+
+
+def rle_encode(chars):
+    out = []
+    i = 0
+    n = len(chars)
+
+    while i < n:
+        b = chars[i]
+        j = i + 1
+        while j < n and chars[j] == b and (j - i) < 255:
+            j += 1
+        run = j - i
+
+        if run >= 3:
+            out.extend([RLE_MARK, run, b])
+            i = j
+            continue
+
+        if b == RLE_MARK:
+            out.extend([RLE_MARK, 0])
+        else:
+            out.append(b)
+        i += 1
+
+    out.extend([RLE_MARK, 0xFF])
+    return out
+
+
+def crop_content(chars):
+    min_x = SCREEN_W
+    min_y = SCREEN_H
+    max_x = -1
+    max_y = -1
+
+    for y in range(SCREEN_H):
+        for x in range(SCREEN_W):
+            if chars[y * SCREEN_W + x] != 0x00:
+                if x < min_x:
+                    min_x = x
+                if y < min_y:
+                    min_y = y
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
+
+    if max_x < min_x or max_y < min_y:
+        return [0x00], 1, 1
+
+    crop_w = (max_x - min_x) + 1
+    crop_h = (max_y - min_y) + 1
+    cropped = []
+
+    for y in range(min_y, max_y + 1):
+        row_start = y * SCREEN_W + min_x
+        cropped.extend(chars[row_start:row_start + crop_w])
+
+    return cropped, crop_w, crop_h
 
 
 def save_preview(chars, output_path):
@@ -82,24 +142,30 @@ def write_header(chars, varname, output_path, input_path):
     with open(output_path, 'w') as f:
         f.write(f'#ifndef {guard}\n')
         f.write(f'#define {guard}\n\n')
-        f.write(f'#include <string.h>\n')
-        f.write(f'#include "dfile.h"\n\n')
+        f.write(f'#include "screen_rle.h"\n\n')
         f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
-        f.write(f'/* 32x24 chars, quad-pixel block graphics (64x48 effective resolution) */\n\n')
-        f.write(f'static const char {varname}[{SCREEN_H} * {SCREEN_W}] = {{\n')
-        for row in range(SCREEN_H):
-            vals = ', '.join(f'0x{chars[row*SCREEN_W + col]:02X}' for col in range(SCREEN_W))
+        cropped, crop_w, crop_h = crop_content(chars)
+        rle = rle_encode(cropped)
+        f.write(f'/* 32x24 chars, quad-pixel block graphics (64x48 effective resolution) */\n')
+        f.write(f'/* Cropped content: {crop_w}x{crop_h} chars, centered at draw time */\n')
+        f.write(f'/* RLE stream format: */\n')
+        f.write(f'/*   literal byte != 0x{RLE_MARK:02X} -> output directly */\n')
+        f.write(f'/*   0x{RLE_MARK:02X}, 0x00            -> output literal 0x{RLE_MARK:02X} */\n')
+        f.write(f'/*   0x{RLE_MARK:02X}, N, V            -> output V repeated N times (N>=1) */\n')
+        f.write(f'/*   0x{RLE_MARK:02X}, 0xFF            -> end of stream */\n\n')
+
+        f.write(f'static const unsigned char {varname}_rle[{len(rle)}] = {{\n')
+        for i in range(0, len(rle), 16):
+            vals = ', '.join(f'0x{b:02X}' for b in rle[i:i+16])
             f.write(f'    {vals},\n')
         f.write('};\n\n')
         f.write(f'static void {varname}_draw(void)\n')
         f.write(f'{{\n')
-        f.write(f'    int r;\n')
-        f.write(f'    for (r = 0; r < 24; r++)\n')
-        f.write(f'        memcpy(dfile + r * DFILE_STRIDE, {varname} + r * 32, 32);\n')
+        f.write(f'    screen_rle_draw_centered({varname}_rle, {crop_w}, {crop_h});\n')
         f.write(f'}}\n\n')
         f.write(f'#endif /* {guard} */\n')
     total = SCREEN_W * SCREEN_H
-    print(f'Header   {output_path}  ({total} bytes)')
+    print(f'Header   {output_path}  (raw {total} bytes, crop {crop_w}x{crop_h}, rle {len(rle)} bytes)')
 
 
 def main():
