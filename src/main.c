@@ -66,7 +66,9 @@ main()
         
         dfile_clear(CH_FULL);
 
-        screen_rle_draw_centered(title_screen_rle, TITLE_SCREEN_CONTENT_W, TITLE_SCREEN_CONTENT_H);
+        screen_rle_draw_centered(title_screen_rle, 
+                                    TITLE_SCREEN_CONTENT_W, TITLE_SCREEN_CONTENT_H, 
+                                    CH_FULL);
 
         char instr_text[] = {
             ZX81_INV(CH_Z), ZX81_INV(CH_X), ZX81_INV(CH_PLUS), ZX81_INV(CH_K), ZX81_INV(CH_M), 
@@ -74,12 +76,19 @@ main()
             ZX81_INV(CH_M), ZX81_INV(CH_O), ZX81_INV(CH_V), ZX81_INV(CH_E)
         };
 
+        // char author_text[] = {
+        //     ZX81_INV(CH_B), ZX81_INV(CH_Y), ZX81_INV(CH_SPACE), 
+        //     ZX81_INV(CH_F), ZX81_INV(CH_E), ZX81_INV(CH_N), ZX81_INV(CH_T), ZX81_INV(CH_L), ZX81_INV(CH_E), ZX81_INV(CH_W), ZX81_INV(CH_O), ZX81_INV(CH_O), ZX81_INV(CH_D), ZX81_INV(CH_L), ZX81_INV(CH_E), 
+        //     ZX81_INV(CH_W), ZX81_INV(CH_I), ZX81_INV(CH_X) 
+        // };
+
         char go_text[] = {
             ZX81_INV(CH_P), ZX81_INV(CH_R), ZX81_INV(CH_E), ZX81_INV(CH_S), ZX81_INV(CH_S), ZX81_INV(CH_SPACE), ZX81_INV(CH_L),
             ZX81_INV(CH_SPACE), ZX81_INV(CH_T), ZX81_INV(CH_O), ZX81_INV(CH_SPACE), ZX81_INV(CH_S), ZX81_INV(CH_T), ZX81_INV(CH_A), ZX81_INV(CH_R), ZX81_INV(CH_T)
         };
 
         dfile_put_zdata((32 - ZSTR_LEN(instr_text))/2, 0, instr_text, ZSTR_LEN(instr_text)+1);
+        // dfile_put_zdata((32 - ZSTR_LEN(author_text))/2, 21, author_text, ZSTR_LEN(author_text)+1);
         dfile_put_zdata((32 - ZSTR_LEN(go_text))/2, 23, go_text, ZSTR_LEN(go_text)+1);
 
         int go_time = 0;
@@ -303,7 +312,7 @@ main()
                 }
                 action_down = 1;
             } else {
-                action_down = 0;
+                // action_down = 0;
             }
 
             if (sprite_is_moving(&player))
@@ -428,7 +437,11 @@ main()
                         };
 
                         dfile_init();
-                        screen_rle_draw_centered(game_over_rle, GAME_OVER_CONTENT_W, GAME_OVER_CONTENT_H);
+
+                        screen_rle_draw_centered(game_over_rle, 
+                                                    GAME_OVER_CONTENT_W, GAME_OVER_CONTENT_H, 
+                                                    CH_SPACE);
+
                         dfile_put_zdata((32 - ZSTR_LEN(restart_text))/2, 22, restart_text, ZSTR_LEN(restart_text)+1);
 
                         while (1) {

@@ -58,6 +58,7 @@ AMMO_MARKER_COLORS = ((255, 0, 0),)
 ENEMY_MARKER_COLORS = ((255, 128, 0), (255, 165, 0))
 HEALTH_MARKER_COLORS = ((0, 255, 0),)
 COMPASS_MARKER_COLORS = ((255, 255, 0),)
+CATAPULT_MARKER_COLORS = ((0, 0, 255),)
 EXIT_MARKER_COLORS = ((255, 0, 255),)
 MARKER_TOLERANCE = 48
 
@@ -140,6 +141,9 @@ def _marker_type(rgb):
     for c in COMPASS_MARKER_COLORS:
         if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
             return 'BOON_COMPASS'
+    for c in CATAPULT_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'BOON_CATAPULT'
     for c in EXIT_MARKER_COLORS:
         if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
             return 'EXIT'
@@ -162,7 +166,7 @@ def convert(input_path, world_w, world_h):
         row = []
         for x in range(world_w):
             marker = _marker_type(px_c[x, y])
-            if marker == 'BOON_AMMO' or marker == 'BOON_HEALTH' or marker == 'BOON_COMPASS':
+            if marker == 'BOON_AMMO' or marker == 'BOON_HEALTH' or marker == 'BOON_COMPASS' or marker == 'BOON_CATAPULT':
                 boons.append((x, y, marker))
                 row.append(DEFAULT)
             elif marker == 'ENEMY_BAT':
@@ -345,6 +349,31 @@ def write_enemy_map(enemies, output_path, input_path):
         f.write('            count++;\n')
         f.write('        }\n')
         f.write('    }\n')
+        f.write('}\n\n')
+        f.write('int enemy_check_projectile(Sprite *enemies, int max, const Sprite *projectile, const char *bg)\n')
+        f.write('{\n')
+        f.write('    int i;\n')
+        f.write('    for (i = 0; i < max; i++) {\n')
+        f.write('        Sprite *e = &enemies[i];\n')
+        f.write('        if (sprite_is_moving(e) && sprite_overlaps(projectile, e)) {\n')
+        f.write('            sprite_erase(e, bg);\n')
+        f.write('            e->dx = 0;\n')
+        f.write('            e->dy = 0;\n')
+        f.write('            e->data = 0;\n')
+        f.write('            return 1;\n')
+        f.write('        }\n')
+        f.write('    }\n')
+        f.write('    return 0;\n')
+        f.write('}\n\n')
+        f.write('int enemy_check_player(Sprite *enemies, int max, const Sprite *player)\n')
+        f.write('{\n')
+        f.write('    int i;\n')
+        f.write('    for (i = 0; i < max; i++) {\n')
+        f.write('        Sprite *e = &enemies[i];\n')
+        f.write('        if (sprite_is_moving(e) && sprite_overlaps(player, e))\n')
+        f.write('            return 1;\n')
+        f.write('    }\n')
+        f.write('    return 0;\n')
         f.write('}\n')
     print(f'Enemies  {output_path}  ({len(enemies)} entries)')
 

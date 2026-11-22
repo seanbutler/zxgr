@@ -4,6 +4,7 @@
 Boon boon_map[] = {
     {  66,   6, BOON_HEALTH  },
     {  18,  11, BOON_AMMO    },
+    {  30,  17, BOON_CATAPULT },
     {  92,  17, BOON_HEALTH  },
     {   8,  18, BOON_HEALTH  },
     {  36,  20, BOON_HEALTH  },

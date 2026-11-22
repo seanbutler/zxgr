@@ -3,7 +3,9 @@
 
 #define SCREEN_RLE_MARK 0xFF
 
-void screen_rle_draw_centered(const unsigned char *src, int content_w, int content_h)
+void screen_rle_draw_centered(const unsigned char *src, 
+                                int content_w, int content_h, 
+                                unsigned char clear_char)
 {
     int x0 = (32 - content_w) / 2;
     int y0 = (24 - content_h) / 2;
@@ -13,7 +15,7 @@ void screen_rle_draw_centered(const unsigned char *src, int content_w, int conte
 
     for (ry = 0; ry < 24; ry++)
         for (rx = 0; rx < 32; rx++)
-            dfile[ry * DFILE_STRIDE + rx] = 0x00;
+            dfile[ry * DFILE_STRIDE + rx] = clear_char;
 
     while (1) {
         unsigned char b = *src++;
