@@ -14,9 +14,9 @@ const char shape_boon_compass[] = {
 };
 
 const char shape_boon_ammo[] = {
-    CH_SPACE,   CH_GREY,  CH_SPACE,
+    CH_SPACE,   CH_O,  CH_SPACE,
     CH_SPACE,  CH_SPACE,    CH_SPACE,
-    CH_GREY,   CH_SPACE,  CH_GREY,
+    CH_O,   CH_SPACE,  CH_O,
 };
 
 const char shape_boon_catapault[] = {

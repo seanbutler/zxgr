@@ -36,18 +36,28 @@ QUAD_LOOKUP = [
 
 def convert(input_path):
     img = Image.open(input_path).convert('L')
-    img = img.resize((PIX_W, PIX_H), Image.LANCZOS)
-    px  = img.load()
+    src_w, src_h = img.size
+    content_w = (src_w + 1) // 2
+    content_h = (src_h + 1) // 2
+    px = img.load()
 
     chars = []
-    for cy in range(SCREEN_H):
-        for cx in range(SCREEN_W):
-            tl = 1 if px[cx*2,   cy*2  ] < THRESHOLD else 0
-            tr = 1 if px[cx*2+1, cy*2  ] < THRESHOLD else 0
-            bl = 1 if px[cx*2,   cy*2+1] < THRESHOLD else 0
-            br = 1 if px[cx*2+1, cy*2+1] < THRESHOLD else 0
-            chars.append(QUAD_LOOKUP[tl | (tr<<1) | (bl<<2) | (br<<3)])
-    return chars
+    for cy in range(content_h):
+        for cx in range(content_w):
+            def sample(dx, dy):
+                x = cx * 2 + dx
+                y = cy * 2 + dy
+                if x >= src_w or y >= src_h:
+                    return 0
+                return 1 if px[x, y] < THRESHOLD else 0
+
+            tl = sample(0, 0)
+            tr = sample(1, 0)
+            bl = sample(0, 1)
+            br = sample(1, 1)
+            chars.append(QUAD_LOOKUP[tl | (tr << 1) | (bl << 2) | (br << 3)])
+
+    return chars, content_w, content_h
 
 
 def rle_encode(chars):
@@ -109,24 +119,19 @@ def crop_content(chars):
     return cropped, crop_w, crop_h
 
 
-def save_preview(chars, output_path):
-    from PIL import ImageDraw
+def save_preview(chars, content_w, content_h, output_path):
     CSCALE = 8
-    img = Image.new('L', (PIX_W * CSCALE // 2, PIX_H * CSCALE // 2), 255)
-    px  = img.load()
-    # render each char as 2x2 block of pixels scaled up
-    for cy in range(SCREEN_H):
-        for cx in range(SCREEN_W):
-            code = chars[cy * SCREEN_W + cx]
+    img = Image.new('L', (content_w * 2 * CSCALE // 2, content_h * 2 * CSCALE // 2), 255)
+    px = img.load()
+    for cy in range(content_h):
+        for cx in range(content_w):
+            code = chars[cy * content_w + cx]
             bits = QUAD_LOOKUP.index(code)
             tl = (bits >> 0) & 1
             tr = (bits >> 1) & 1
             bl = (bits >> 2) & 1
             br = (bits >> 3) & 1
-            for dy, row_bits in enumerate([tl * 0x11 + tr * 0x11, bl * 0x11 + br * 0x11]):
-                pass
-            # just draw 2x2 blocks
-            for (dx, dy, v) in [(0,0,tl),(1,0,tr),(0,1,bl),(1,1,br)]:
+            for dx, dy, v in [(0, 0, tl), (1, 0, tr), (0, 1, bl), (1, 1, br)]:
                 colour = 0 if v else 255
                 bx = (cx * 2 + dx) * (CSCALE // 2)
                 by = (cy * 2 + dy) * (CSCALE // 2)
@@ -134,38 +139,37 @@ def save_preview(chars, output_path):
                     for rx in range(CSCALE // 2):
                         px[bx + rx, by + ry] = colour
     img.save(output_path)
-    print(f'Preview  {output_path}  ({PIX_W}x{PIX_H}px effective)')
+    print(f'Preview  {output_path}  ({content_w * 2}x{content_h * 2}px effective)')
 
 
-def write_header(chars, varname, output_path, input_path):
+def write_header(chars, content_w, content_h, varname, output_path, input_path):
     guard = os.path.basename(output_path).upper().replace('.', '_').replace('-', '_')
+    upper_name = varname.upper()
+    rle = rle_encode(chars)
+
     with open(output_path, 'w') as f:
         f.write(f'#ifndef {guard}\n')
         f.write(f'#define {guard}\n\n')
         f.write(f'#include "screen_rle.h"\n\n')
         f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
-        cropped, crop_w, crop_h = crop_content(chars)
-        rle = rle_encode(cropped)
-        f.write(f'/* 32x24 chars, quad-pixel block graphics (64x48 effective resolution) */\n')
-        f.write(f'/* Cropped content: {crop_w}x{crop_h} chars, centered at draw time */\n')
+        f.write(f'/* Source PNG: {content_w * 2}x{content_h * 2} effective pixels */\n')
+        f.write(f'/* Content: {content_w}x{content_h} chars, drawn centered */\n')
         f.write(f'/* RLE stream format: */\n')
         f.write(f'/*   literal byte != 0x{RLE_MARK:02X} -> output directly */\n')
         f.write(f'/*   0x{RLE_MARK:02X}, 0x00            -> output literal 0x{RLE_MARK:02X} */\n')
         f.write(f'/*   0x{RLE_MARK:02X}, N, V            -> output V repeated N times (N>=1) */\n')
         f.write(f'/*   0x{RLE_MARK:02X}, 0xFF            -> end of stream */\n\n')
 
+        f.write(f'#define {upper_name}_CONTENT_W {content_w}\n')
+        f.write(f'#define {upper_name}_CONTENT_H {content_h}\n\n')
         f.write(f'static const unsigned char {varname}_rle[{len(rle)}] = {{\n')
         for i in range(0, len(rle), 16):
             vals = ', '.join(f'0x{b:02X}' for b in rle[i:i+16])
             f.write(f'    {vals},\n')
         f.write('};\n\n')
-        f.write(f'static void {varname}_draw(void)\n')
-        f.write(f'{{\n')
-        f.write(f'    screen_rle_draw_centered({varname}_rle, {crop_w}, {crop_h});\n')
-        f.write(f'}}\n\n')
         f.write(f'#endif /* {guard} */\n')
-    total = SCREEN_W * SCREEN_H
-    print(f'Header   {output_path}  (raw {total} bytes, crop {crop_w}x{crop_h}, rle {len(rle)} bytes)')
+
+    print(f'Header   {output_path}  ({content_w}x{content_h} chars, rle {len(rle)} bytes)')
 
 
 def main():
@@ -178,9 +182,9 @@ def main():
     varname     = args[2] if len(args) > 2 else 'title_screen'
 
     base = os.path.splitext(output_path)[0]
-    chars = convert(input_path)
-    save_preview(chars, base + '_preview.png')
-    write_header(chars, varname, output_path, input_path)
+    chars, content_w, content_h = convert(input_path)
+    save_preview(chars, content_w, content_h, base + '_preview.png')
+    write_header(chars, content_w, content_h, varname, output_path, input_path)
 
 
 if __name__ == '__main__':

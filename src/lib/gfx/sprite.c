@@ -44,3 +44,9 @@ void sprite_erase(const Sprite *s, const char *bg)
         }
     }
 }
+
+int sprite_overlaps(const Sprite *a, const Sprite *b)
+{
+    return a->x < b->x + b->w && a->x + a->w > b->x &&
+           a->y < b->y + b->h && a->y + a->h > b->y;
+}

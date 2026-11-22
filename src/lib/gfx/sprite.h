@@ -20,6 +20,7 @@ void sprite_init(Sprite *s, int x, int y, int w, int h, int dx, int dy, const ch
 void sprite_move(Sprite *s);
 void sprite_draw(const Sprite *s);
 void sprite_erase(const Sprite *s, const char *bg);
+int sprite_overlaps(const Sprite *a, const Sprite *b);
 
 #define sprite_is_moving(s) ((s)->dx != 0 || (s)->dy != 0)
 

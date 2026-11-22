@@ -10,6 +10,7 @@ static const char * const boon_shapes[] = {
     shape_boon_health,
     shape_boon_ammo,
     shape_boon_compass,
+    shape_boon_catapault,
 };
 
 void boon_draw_all(int scroll_x, int scroll_y)
@@ -69,6 +70,9 @@ void boon_check_collision(Sprite *boons, int max, int player_x, int player_y, in
                     break;
                 case BOON_COMPASS:
                     player_state.has_compass = 1;
+                    break;
+                case BOON_CATAPULT:
+                    player_state.has_catapult = 1;
                     break;
             }
 

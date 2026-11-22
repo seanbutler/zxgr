@@ -14,5 +14,7 @@ typedef struct {
 extern const EnemySpawn enemy_map[];
 
 void enemies_load_screen(Sprite *enemies, int *anim, int max, int scroll_x, int scroll_y);
+int enemy_check_projectile(Sprite *enemies, int max, const Sprite *projectile, const char *bg);
+int enemy_check_player(Sprite *enemies, int max, const Sprite *player);
 
 #endif

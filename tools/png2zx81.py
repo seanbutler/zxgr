@@ -28,6 +28,7 @@ Saves a 256x192 preview PNG alongside the .h file.
 Usage:
     python3 png2zx81.py <input.png> <output.h> [<varname>] [--width N] [--height N]
                        [--boon-map path/to/boon_map.c] [--enemy-map path/to/enemy_map.c]
+                       [--exit-map path/to/exit_map.h]
 """
 
 import sys
@@ -56,6 +57,8 @@ DEFAULT = 0x00 # char code for the implicit background tile
 AMMO_MARKER_COLORS = ((255, 0, 0),)
 ENEMY_MARKER_COLORS = ((255, 128, 0), (255, 165, 0))
 HEALTH_MARKER_COLORS = ((0, 255, 0),)
+COMPASS_MARKER_COLORS = ((255, 255, 0),)
+EXIT_MARKER_COLORS = ((255, 0, 255),)
 MARKER_TOLERANCE = 48
 
 # ---------------------------------------------------------------------------
@@ -134,6 +137,12 @@ def _marker_type(rgb):
     for c in HEALTH_MARKER_COLORS:
         if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
             return 'BOON_HEALTH'
+    for c in COMPASS_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'BOON_COMPASS'
+    for c in EXIT_MARKER_COLORS:
+        if _is_close_rgb(rgb, c, MARKER_TOLERANCE):
+            return 'EXIT'
     return None
 
 
@@ -146,23 +155,27 @@ def convert(input_path, world_w, world_h):
 
     boons = []
     enemies = []
+    exits = []
     chars = []
 
     for y in range(world_h):
         row = []
         for x in range(world_w):
             marker = _marker_type(px_c[x, y])
-            if marker == 'BOON_AMMO' or marker == 'BOON_HEALTH':
+            if marker == 'BOON_AMMO' or marker == 'BOON_HEALTH' or marker == 'BOON_COMPASS':
                 boons.append((x, y, marker))
                 row.append(DEFAULT)
             elif marker == 'ENEMY_BAT':
                 enemies.append((x, y, marker))
                 row.append(DEFAULT)
+            elif marker == 'EXIT':
+                exits.append((x, y))
+                row.append(DEFAULT)
             else:
                 row.append(_pick_char(px_l[x, y] / 255.0))
         chars.append(row)
 
-    return chars, boons, enemies
+    return chars, boons, enemies, exits
 
 
 # ---------------------------------------------------------------------------
@@ -198,43 +211,91 @@ def extract_tiles(chars, world_w, world_h):
                 palette.append(tile)
             world_map.append((tx, ty, lookup[tile]))
 
-    return palette, world_map
+    usage_counts = [0] * len(palette)
+    usage_locations = [[] for _ in palette]
+    for tx, ty, ti in world_map:
+        usage_counts[ti] += 1
+        usage_locations[ti].append((tx, ty))
+
+    return palette, world_map, usage_counts, usage_locations
 
 
 # ---------------------------------------------------------------------------
 # Preview PNG
 # ---------------------------------------------------------------------------
-def save_preview(chars, output_path, world_w, world_h):
-    preview = Image.new('L', (world_w * 8, world_h * 8), 255)
+def save_preview(chars, usage_counts, usage_locations, output_path, world_w, world_h):
+    preview = Image.new('RGB', (world_w * 8, world_h * 8), (255, 255, 255))
     px = preview.load()
+
     for y, row in enumerate(chars):
         for x, code in enumerate(row):
             grid = _char_grid(code)
             ox, oy = x * 8, y * 8
             for r in range(8):
                 for c in range(8):
-                    px[ox + c, oy + r] = 0 if grid[r][c] else 255
+                    px[ox + c, oy + r] = (0, 0, 0) if grid[r][c] else (255, 255, 255)
+
+    # Yellow outlines mark tiles that are used only once (artist one-off candidates).
+    tile_px = TILE_W * 8
+    for ti, count in enumerate(usage_counts):
+        if count != 1:
+            continue
+        tx, ty = usage_locations[ti][0]
+        x0 = tx * tile_px
+        y0 = ty * tile_px
+        x1 = min(x0 + tile_px - 1, world_w * 8 - 1)
+        y1 = min(y0 + tile_px - 1, world_h * 8 - 1)
+
+        for x in range(x0, x1 + 1):
+            px[x, y0] = (255, 215, 0)
+            px[x, min(y0 + 1, y1)] = (255, 215, 0)
+            px[x, y1] = (255, 215, 0)
+            px[x, max(y1 - 1, y0)] = (255, 215, 0)
+        for y in range(y0, y1 + 1):
+            px[x0, y] = (255, 215, 0)
+            px[min(x0 + 1, x1), y] = (255, 215, 0)
+            px[x1, y] = (255, 215, 0)
+            px[max(x1 - 1, x0), y] = (255, 215, 0)
+
     preview.save(output_path)
-    print(f'Preview  {output_path}  ({world_w * 8}x{world_h * 8}px)')
+    print(f'Preview  {output_path}  ({world_w * 8}x{world_h * 8}px, single-use tiles in yellow)')
 
 
-def save_tile_sheet(palette, output_path):
+def save_tile_sheet(palette, usage_counts, usage_locations, output_path):
+    from PIL import ImageDraw
+
     tile_px_w = TILE_W * 8
     tile_px_h = TILE_H * 8
-    img = Image.new('L', (tile_px_w, tile_px_h * len(palette)), 255)
+    label_x = tile_px_w + 8
+    sheet_px_w = 160
+    img = Image.new('RGB', (sheet_px_w, tile_px_h * len(palette)), (255, 255, 255))
     px = img.load()
+    draw = ImageDraw.Draw(img)
+
     for i, tile in enumerate(palette):
+        oy = i * tile_px_h
+        draw.line((tile_px_w + 3, oy, tile_px_w + 3, oy + tile_px_h - 1), fill=(180, 180, 180))
+
         for r in range(TILE_H):
             for c in range(TILE_W):
                 code = tile[r * TILE_W + c]
                 grid = _char_grid(code)
                 ox = c * 8
-                oy = i * tile_px_h + r * 8
                 for gr in range(8):
                     for gc in range(8):
-                        px[ox + gc, oy + gr] = 0 if grid[gr][gc] else 255
+                        px[ox + gc, oy + r * 8 + gr] = (0, 0, 0) if grid[gr][gc] else (255, 255, 255)
+
+        count = usage_counts[i]
+        draw.text((label_x, oy + 2), f'Tile {i}', fill=(20, 20, 20))
+        draw.text((label_x, oy + 11), f'Used {count}x', fill=(20, 20, 20))
+
+        if count == 1:
+            draw.text((label_x, oy + 20), 'FLAG-ONE-OFF', fill=(220, 40, 40))
+            tx, ty = usage_locations[i][0]
+            draw.text((label_x, oy + 29), f'at tx={tx}, ty={ty}', fill=(30, 90, 180))
+
     img.save(output_path)
-    print(f'Tiles    {output_path}  ({len(palette)} tiles, {tile_px_w}x{tile_px_h * len(palette)}px)')
+    print(f'Tiles    {output_path}  ({len(palette)} tiles, {sheet_px_w}x{tile_px_h * len(palette)}px)')
 
 
 def write_boon_map(boons, output_path, input_path):
@@ -288,10 +349,27 @@ def write_enemy_map(enemies, output_path, input_path):
     print(f'Enemies  {output_path}  ({len(enemies)} entries)')
 
 
+def write_exit_map(exits, output_path, input_path):
+    wx = exits[0][0] if exits else 0
+    wy = exits[0][1] if exits else 0
+
+    guard = os.path.basename(output_path).upper().replace('.', '_').replace('-', '_')
+    with open(output_path, 'w') as f:
+        f.write(f'#ifndef {guard}\n')
+        f.write(f'#define {guard}\n\n')
+        f.write(f'/* Generated from {os.path.basename(input_path)} -- do not edit */\n')
+        f.write(f'#define EXIT_ENABLED {1 if exits else 0}\n')
+        f.write(f'#define EXIT_WX {wx}\n')
+        f.write(f'#define EXIT_WY {wy}\n\n')
+        f.write(f'#endif /* {guard} */\n')
+
+    print(f'Exit     {output_path}  ({wx}, {wy})')
+
+
 # ---------------------------------------------------------------------------
 # C header output
 # ---------------------------------------------------------------------------
-def write_header(palette, world_map, varname, output_path, input_path, world_w, world_h):
+def write_header(palette, world_map, usage_counts, varname, output_path, input_path, world_w, world_h):
     guard = (os.path.basename(output_path)
              .upper().replace('.', '_').replace('-', '_'))
 
@@ -338,6 +416,12 @@ def write_header(palette, world_map, varname, output_path, input_path, world_w, 
         f.write(f'    {TILE_H},\n')
         f.write(f'}};\n\n')
 
+        # Tile usage report
+        one_off = [i for i, count in enumerate(usage_counts) if count == 1]
+        f.write(f'/* Tile usage: {len(palette)} unique, {len(one_off)} used once */\n')
+        if one_off:
+            f.write(f'/* One-off tile IDs: {", ".join(str(i) for i in one_off)} */\n')
+
         f.write(f'#endif /* {guard} */\n')
 
     tile_bytes  = len(palette) * TILE_W * TILE_H
@@ -367,20 +451,33 @@ def main():
     world_h = int(args[args.index('--height') + 1]) if '--height' in args else src_h
     boon_map_path = args[args.index('--boon-map') + 1] if '--boon-map' in args else None
     enemy_map_path = args[args.index('--enemy-map') + 1] if '--enemy-map' in args else None
+    exit_map_path = args[args.index('--exit-map') + 1] if '--exit-map' in args else None
 
     base, _       = os.path.splitext(output_path)
     preview_path  = base + '_preview.png'
     tiles_path    = base + '_tiles.png'
 
-    chars, boons, enemies = convert(input_path, world_w, world_h)
-    save_preview(chars, preview_path, world_w, world_h)
-    palette, world_map = extract_tiles(chars, world_w, world_h)
-    save_tile_sheet(palette, tiles_path)
-    write_header(palette, world_map, varname, output_path, input_path, world_w, world_h)
+    chars, boons, enemies, exits = convert(input_path, world_w, world_h)
+    palette, world_map, usage_counts, usage_locations = extract_tiles(chars, world_w, world_h)
+    save_preview(chars, usage_counts, usage_locations, preview_path, world_w, world_h)
+    save_tile_sheet(palette, usage_counts, usage_locations, tiles_path)
+    write_header(palette, world_map, usage_counts, varname, output_path, input_path, world_w, world_h)
     if boon_map_path:
         write_boon_map(boons, boon_map_path, input_path)
     if enemy_map_path:
         write_enemy_map(enemies, enemy_map_path, input_path)
+    if exit_map_path:
+        write_exit_map(exits, exit_map_path, input_path)
+
+    report_tile_usage(palette, usage_counts, usage_locations)
+
+
+def report_tile_usage(palette, usage_counts, usage_locations):
+    one_off = [i for i, count in enumerate(usage_counts) if count == 1]
+    print(f'Tile usage: {len(palette)} unique, {len(one_off)} used once')
+    for ti in one_off:
+        tx, ty = usage_locations[ti][0]
+        print(f'  TILE {ti:3d}: one-off at tx={tx}, ty={ty}')
 
 
 if __name__ == '__main__':
