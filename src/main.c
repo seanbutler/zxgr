@@ -300,7 +300,7 @@ main()
                 }
             }
 
-            if (key_pressed(KEY_ACTION)) {
+            if (key_pressed(KEY_SHOOT)) {
                 if (!action_down && player_state.has_catapult && player_state.ammo > 0) {
                     player_state.ammo--;
                     shot_active = 1;
@@ -312,7 +312,7 @@ main()
                 }
                 action_down = 1;
             } else {
-                // action_down = 0;
+                action_down = 0;
             }
 
             if (sprite_is_moving(&player))

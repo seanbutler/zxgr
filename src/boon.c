@@ -73,6 +73,7 @@ void boon_check_collision(Sprite *boons, int max, int player_x, int player_y, in
                     break;
                 case BOON_CATAPULT:
                     player_state.has_catapult = 1;
+                    player_state.ammo += 6;
                     break;
             }
 

@@ -33,5 +33,6 @@ static unsigned char read_port(unsigned int port)
 #define KEY_UP     KEY_K
 #define KEY_DOWN   KEY_M
 #define KEY_ACTION KEY_L
+#define KEY_SHOOT  KEY_L
 
 #endif
